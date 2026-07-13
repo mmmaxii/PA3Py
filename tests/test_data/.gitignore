@@ -1,3 +1,4 @@
-# Ignorar los datos binarios pesados HDF5 pero no ignorar esta carpeta
 *
 !.gitignore
+!run_smooth_a0.001_v10/
+!run_smooth_a0.001_v10/*
