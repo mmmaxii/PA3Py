@@ -83,3 +83,45 @@ class PA3Py:
     def calculate_isolation_mass_map(self):
         """Calcula el mapa teórico de masa de aislamiento en todo el disco."""
         return self.engine.calculate_isolation_mass_map()
+
+    def save_results(self, results: dict, filename: str):
+        """
+        Guarda los resultados de acreción (tracks) en un archivo HDF5, 
+        incluyendo metadatos de las especies químicas.
+        """
+        import h5py
+        with h5py.File(filename, 'w') as f:
+            # En HDF5 las listas de strings a veces se guardan mejor especificando tipo o usando attrs simples
+            # Convertiremos la lista a ASCII puro para compatibilidad con h5py
+            ascii_species = [s.encode('ascii', 'ignore') for s in self.engine.tracked_species]
+            f.attrs['tracked_species'] = ascii_species
+            f.attrs['M_EARTH'] = self.engine.M_EARTH
+            
+            tracks = f.create_group('tracks')
+            for r_au, track_data in results.items():
+                dset = tracks.create_dataset(f"embryo_{r_au:.4f}_AU", data=track_data)
+                dset.attrs['r_au'] = float(r_au)
+
+    @staticmethod
+    def load_results(filename: str) -> tuple:
+        """
+        Carga los tracks de crecimiento desde un archivo HDF5.
+        
+        Retorna:
+        --------
+        (results, tracked_species)
+            results: dict donde la llave es el r_au (float) y el valor es la matriz de historia.
+            tracked_species: Lista de strings con los nombres de las especies en el mismo orden que la matriz.
+        """
+        import h5py
+        results = {}
+        with h5py.File(filename, 'r') as f:
+            raw_species = list(f.attrs['tracked_species'])
+            tracked_species = [s.decode('ascii') if isinstance(s, bytes) else s for s in raw_species]
+            
+            tracks = f['tracks']
+            for key in tracks.keys():
+                r_au = float(tracks[key].attrs['r_au'])
+                results[r_au] = tracks[key][:]
+                
+        return results, tracked_species
