@@ -239,15 +239,20 @@ class PebbleAccretionModule3:
 
     def summary(self, results: dict):
         """Imprime tabla resumen de composición final con M_iso y especies dinámicas."""
-        n_sp = len(self.tracked_species)
-        header_len = 35 + (n_sp * 11)
+        col_widths = []
+        for sp in self.tracked_species:
+            title = f"f_{sp}[%]"
+            col_widths.append(max(10, len(title) + 2))
+            
+        header_len = 35 + sum(col_widths)
         SEP = '-' * header_len
         print(f"\n{SEP}")
         
         # Cabecera dinámica
         header = f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11}"
-        for sp in self.tracked_species:
-            header += f" {'f_' + sp[:4] + '[%]':>10}"
+        for i, sp in enumerate(self.tracked_species):
+            title = f"f_{sp}[%]"
+            header += f"{title:>{col_widths[i]}}"
         print(header)
         print(SEP)
         
@@ -265,12 +270,12 @@ class PebbleAccretionModule3:
             M_total = sum(M_species)
             
             line = f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}"
-            for m_sp in M_species:
+            for i, m_sp in enumerate(M_species):
                 if M_total <= 0:
                     f_sp = 0.0
                 else:
                     f_sp = 100 * m_sp / M_total
-                line += f"  {f_sp:>9.1f}"
+                line += f"{f_sp:>{col_widths[i]}.1f}"
                 
             print(line)
         print(f"{SEP}\n")
