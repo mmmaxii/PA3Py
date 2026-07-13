@@ -102,12 +102,20 @@ class FunctionComposition(CompositionModel):
         self.user_func = user_func
         
         if species is None:
-            # Auto-detección: Inyectamos un valor de prueba para ver qué diccionario retorna
+            # Auto-detección: Hacemos un barrido logarítmico en r y t para entrar 
+            # a todas las posibles ramas "if" de la función del usuario y capturar todas las especies.
             try:
-                dummy_result = self.user_func(1.0, 0.0)
-                if not isinstance(dummy_result, dict):
-                    raise ValueError(f"La función de usuario debe retornar un dict. Retornó: {type(dummy_result)}")
-                self.species = list(dummy_result.keys())
+                self.species = []
+                for r_test in [1e11, 1e12, 1e13, 1e14, 1e15, 1e16]:
+                    for t_test in [0.0, 1e10, 1e12, 1e14]:
+                        res = self.user_func(r_test, t_test)
+                        if not isinstance(res, dict):
+                            raise ValueError(f"La función debe retornar un dict. Retornó: {type(res)}")
+                        for k in res.keys():
+                            if k not in self.species:
+                                self.species.append(k)
+                if not self.species:
+                    raise ValueError("La función de usuario devolvió diccionarios vacíos en todos los tests.")
             except Exception as e:
                 raise RuntimeError(f"Fallo en la auto-detección de especies de la función: {e}\n"
                                    "Provee la lista 'species' explícitamente.")
