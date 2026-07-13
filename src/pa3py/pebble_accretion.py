@@ -263,3 +263,20 @@ class PebbleAccretionModule3:
             tipo = "[W] Waterworld" if f_h2o > 10 else "[R] Rocoso"
             print(f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}  {f_h2o:>9.1f}  {f_sil:>9.1f}  {tipo}")
         print(f"{SEP}\n")
+
+    def calculate_isolation_mass_map(self) -> np.ndarray:
+        """
+        Calcula la masa de aislamiento teórica (Drążkowska et al. 2023 Eq 6) en toda la grilla 
+        del disco (Tiempo, Radio) sin necesidad de correr la simulación.
+        
+        Retorna:
+        --------
+        M_iso_map : np.ndarray
+            Matriz 2D de tamaño (Nt, Nr) con la masa de aislamiento en gramos.
+        """
+        M_iso_map = np.zeros((self.data.Nt, self.data.Nr))
+        for t in range(self.data.Nt):
+            h_gas = self.data.gas_Hp[t, :] / self.data.r
+            M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
+            M_iso_map[t, :] = np.maximum(M_iso, 0.1 * self.M_EARTH)
+        return M_iso_map
