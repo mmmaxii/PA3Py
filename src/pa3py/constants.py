@@ -14,3 +14,6 @@ M_EARTH = 5.972167867791379e27
 
 # Astronomical Unit [cm]
 AU = 1.495978707e13
+
+# Julian Year [s]
+YEAR = 3.15576e7
