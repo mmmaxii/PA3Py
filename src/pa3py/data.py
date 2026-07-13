@@ -63,13 +63,14 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
 
     print(f"[load_tripodpy_hdf5] Leyendo {len(files)} snapshots desde {datadir}...")
     
-    times_list = []
+    times_list, OmegaK_list = [], []
     rsnow = {'H2O': []}
-    
-    gas_S, gas_T, gas_cs, gas_eta, gas_nu, gas_alpha, gas_Hp = [], [], [], [], [], [], []
-    dust_Sigma, dust_vr, dust_St, dust_H = [], [], [], []
-    OmegaK_list = []
     r_grid = None
+    
+    gas_keys = ['Sigma', 'T', 'cs', 'eta', 'nu', 'alpha', 'Hp']
+    dust_keys = ['Sigma', 'v/rad', 'St', 'H']
+    gas_data = {k: [] for k in gas_keys}
+    dust_data = {k: [] for k in dust_keys}
 
     for fpath in files:
         with h5py.File(fpath, 'r') as f:
@@ -82,20 +83,9 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
             if r_grid is None:
                 r_grid = f['grid/r'][:]
 
-            # Gas
-            gas_S.append(f['gas/Sigma'][:])
-            gas_T.append(f['gas/T'][:])
-            gas_cs.append(f['gas/cs'][:])
-            gas_eta.append(f['gas/eta'][:])
-            gas_nu.append(f['gas/nu'][:])
-            gas_alpha.append(f['gas/alpha'][:])
-            gas_Hp.append(f['gas/Hp'][:])
-
-            # Dust
-            dust_Sigma.append(f['dust/Sigma'][:])
-            dust_vr.append(f['dust/v/rad'][:])
-            dust_St.append(f['dust/St'][:])
-            dust_H.append(f['dust/H'][:])
+            # Cargar arrays
+            for k in gas_keys: gas_data[k].append(f[f'gas/{k}'][:])
+            for k in dust_keys: dust_data[k].append(f[f'dust/{k}'][:])
 
             # OmegaK
             if 'grid/OmegaK' in f:
@@ -123,17 +113,17 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
     return DiskData(
         times=times,
         r=r_grid,
-        gas_Sigma=np.array(gas_S),
-        gas_T=np.array(gas_T),
-        gas_cs=np.array(gas_cs),
-        gas_eta=np.array(gas_eta),
-        gas_nu=np.array(gas_nu),
-        gas_alpha=np.array(gas_alpha),
-        gas_Hp=np.array(gas_Hp),
-        dust_Sigma=np.array(dust_Sigma),
-        dust_vr=np.array(dust_vr),
-        dust_St=np.array(dust_St),
-        dust_H=np.array(dust_H),
+        gas_Sigma=np.array(gas_data['Sigma']),
+        gas_T=np.array(gas_data['T']),
+        gas_cs=np.array(gas_data['cs']),
+        gas_eta=np.array(gas_data['eta']),
+        gas_nu=np.array(gas_data['nu']),
+        gas_alpha=np.array(gas_data['alpha']),
+        gas_Hp=np.array(gas_data['Hp']),
+        dust_Sigma=np.array(dust_data['Sigma']),
+        dust_vr=np.array(dust_data['v/rad']),
+        dust_St=np.array(dust_data['St']),
+        dust_H=np.array(dust_data['H']),
         Omega_K=Omega_K,
         M_star=M_star,
         hdf5_snowlines=rsnow
