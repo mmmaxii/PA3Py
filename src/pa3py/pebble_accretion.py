@@ -18,8 +18,6 @@ Unidades internas: CGS (g, cm, s).
 import numpy as np
 
 # Importar constantes y tipos
-from scipy.interpolate import interp1d
-
 from .data import DiskData
 from .composition import CompositionModel, SimpleWaterComposition
 from . import constants as c

@@ -3,6 +3,8 @@ core.py - Interfaz principal unificada (Facade) para PA3Py.
 """
 
 from typing import List, Callable, Optional
+import h5py
+
 from .data import load_tripodpy_hdf5
 from .composition import CompositionModel, SimpleWaterComposition, FunctionComposition
 from .pebble_accretion import PebbleAccretionModule3
@@ -89,7 +91,6 @@ class PA3Py:
         Guarda los resultados de acreción (tracks) en un archivo HDF5, 
         incluyendo metadatos de las especies químicas.
         """
-        import h5py
         with h5py.File(filename, 'w') as f:
             # En HDF5 las listas de strings a veces se guardan mejor especificando tipo o usando attrs simples
             # Convertiremos la lista a ASCII puro para compatibilidad con h5py
@@ -113,7 +114,6 @@ class PA3Py:
             results: dict donde la llave es el r_au (float) y el valor es la matriz de historia.
             tracked_species: Lista de strings con los nombres de las especies en el mismo orden que la matriz.
         """
-        import h5py
         results = {}
         with h5py.File(filename, 'r') as f:
             raw_species = list(f.attrs['tracked_species'])

@@ -94,9 +94,9 @@ from pa3py import PA3Py
 # Cargar simulación
 sim = PA3Py('../../tests/test_data/run_smooth_a0.001_v10')"""),
         nbf.v4.new_markdown_cell("## Función de Composición Personalizada\n\nDefiniremos un disco protoplanetario con 4 especies químicas (`silicatos`, `H2O`, `CO2`, `CO`) particionado en 4 zonas dinámicas."),
-        nbf.v4.new_code_cell("""def quimica_4_zonas(r_cm, t_sec):
-    from pa3py import constants as c
-    
+        nbf.v4.new_code_cell("""from pa3py import constants as c
+
+def quimica_4_zonas(r_cm, t_sec):
     # 1. Definimos las snowlines (algunas pueden migrar)
     r_h2o = 2.73 * c.AU * (max(t_sec, 1e-6) / 1e13)**(-0.5)
     r_co2 = 5.0 * c.AU

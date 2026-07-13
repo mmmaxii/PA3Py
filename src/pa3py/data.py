@@ -8,6 +8,7 @@ import h5py
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+from . import constants as c
 
 @dataclass
 class DiskData:
@@ -55,7 +56,6 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
     Lee los archivos HDF5 generados por tripodpy y los convierte
     en un objeto DiskData.
     """
-    from . import constants as c
     
     files = sorted(glob.glob(os.path.join(datadir, 'data*.hdf5')))
     if not files:

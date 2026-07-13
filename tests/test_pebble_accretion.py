@@ -9,10 +9,8 @@ import numpy as np
 # Permitir correr el test sin instalar el paquete (pip install -e .)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
-from pa3py.data import load_tripodpy_hdf5
-from pa3py.composition import SimpleWaterComposition, FunctionComposition
-from pa3py.pebble_accretion import PebbleAccretionModule3
-from pa3py.snowline import generate_rsnow_array
+from pa3py import PebbleAccretionModule3, load_tripodpy_hdf5, FunctionComposition, SimpleWaterComposition, generate_rsnow_array
+from pa3py import constants as c
 
 # Rutas locales relativas a la carpeta del test
 _current_dir = os.path.dirname(__file__)
@@ -142,7 +140,6 @@ def test_multizone_autodetection():
     disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
     
     def quimica_4_zonas(r_cm, t_sec):
-        from pa3py import constants as c
         r_h2o = 2.73 * c.AU * (max(t_sec, 1e-6) / 1e13)**(-0.5)
         r_co2 = 5.0 * c.AU
         r_co  = 12.0 * c.AU
