@@ -18,9 +18,11 @@ Unidades internas: CGS (g, cm, s).
 import numpy as np
 
 # Importar constantes y tipos
-from . import constants as c
+from scipy.interpolate import interp1d
+
 from .data import DiskData
 from .composition import CompositionModel, SimpleWaterComposition
+from . import constants as c
 
 
 class PebbleAccretionModule3:
@@ -31,12 +33,6 @@ class PebbleAccretionModule3:
     Esta clase ahora es completamente agnóstica de los archivos fuente (HDF5), 
     y depende de un objeto `DiskData` y un modelo de composición `CompositionModel`.
     """
-
-    # ── Constantes físicas (CGS) ──────────────────────────────────────────
-    G_CGS   = c.G        # cm³ g⁻¹ s⁻²
-    M_SUN   = c.M_SUN    # g
-    M_EARTH = c.M_EARTH  # g
-    AU      = c.AU       # cm
 
     # Índice único de pebbles. (El último bin de polvo representa los pebbles)
     peb_idx = -1
@@ -55,6 +51,12 @@ class PebbleAccretionModule3:
             usando la snowline de agua que venga del HDF5 (si existe).
         """
         self.data = disk_data
+        
+        # Referencias a constantes físicas (ahora desde constants.py)
+        self.M_EARTH = c.M_EARTH
+        self.M_SUN   = c.M_SUN
+        self.G_CGS   = c.G
+        self.AU      = c.AU
         
         if comp_model is None:
             # Fallback a la clásica water snowline de los datos base

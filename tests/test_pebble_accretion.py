@@ -142,10 +142,10 @@ def test_multizone_autodetection():
     disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
     
     def quimica_4_zonas(r_cm, t_sec):
-        AU = 1.496e13
-        r_h2o = 2.73 * AU * (max(t_sec, 1e-6) / 1e13)**(-0.5)
-        r_co2 = 5.0 * AU
-        r_co  = 12.0 * AU
+        from pa3py import constants as c
+        r_h2o = 2.73 * c.AU * (max(t_sec, 1e-6) / 1e13)**(-0.5)
+        r_co2 = 5.0 * c.AU
+        r_co  = 12.0 * c.AU
         if r_cm < r_h2o:
             return {'silicatos': 1.0}                           
         elif r_cm < r_co2:
