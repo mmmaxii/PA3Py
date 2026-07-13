@@ -77,5 +77,5 @@ results = sim.run_growth([5.0, 10.0, 20.0])
 
 ## Acknowledgements
 
-PA3Py was developed at the Pontificia Universidad Católica de Chile. 
+PA3Py was developed at the Pontificia Universidad Católica de Chile by Maximiliano Valderrama Vargas. 
 Contact: [mvalderrav@uc.cl](mailto:mvalderrav@uc.cl)
