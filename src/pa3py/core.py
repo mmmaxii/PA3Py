@@ -1,5 +1,5 @@
 """
-core.py - Interfaz principal unificada (Facade) para PA3Py.
+core.py - Interfaz principal (Facade).
 """
 
 from typing import List, Callable, Optional
@@ -13,20 +13,18 @@ from .plotting import plot_hovmoller
 
 class PA3Py:
     """
-    Clase principal que centraliza el flujo de trabajo de PA3Py:
-    Carga de datos HDF5, configuración química, simulación de acreción y gráficas.
+    Centraliza flujo de PA3Py: Datos HDF5, química, acreción y gráficas.
     """
     def __init__(self, data_dir: str, comp_model: Optional[CompositionModel] = None):
         """
-        Inicializa la simulación cargando los datos en memoria.
+        Inicializa la simulación y carga los datos.
         
         Parámetros:
         -----------
         data_dir : str
-            Ruta al directorio que contiene los archivos HDF5 de la simulación del disco.
+            Ruta a archivos HDF5.
         comp_model : CompositionModel, opcional
-            Modelo de composición. Si no se provee, asume el modelo clásico de 
-            agua con migración de snowline (Oka + Hartmann).
+            Modelo de composición. Por defecto: Agua simple + migración snowline.
         """
         self.data_dir = data_dir
         self.disk = load_tripodpy_hdf5(data_dir)
@@ -45,12 +43,10 @@ class PA3Py:
         
     def set_custom_chemistry(self, user_func: Callable, species: Optional[List[str]] = None):
         """
-        Atajo para redefinir la química de la simulación usando una función de Python.
+        Atajo para redefinir la química con una función Python.
         
         Ejemplo:
-            sim.set_custom_chemistry(mi_funcion)
-            # O con especies explícitas si la función no es auto-ejecutable:
-            sim.set_custom_chemistry(mi_funcion, ["silicatos", "H2O", "CO2"])
+            sim.set_custom_chemistry(mi_funcion, ["silicatos", "H2O"])
         """
         self.comp = FunctionComposition(user_func, species)
         self._init_engine()
@@ -87,10 +83,7 @@ class PA3Py:
         return self.engine.calculate_isolation_mass_map()
 
     def save_results(self, results: dict, filename: str):
-        """
-        Guarda los resultados de acreción (tracks) en un archivo HDF5, 
-        incluyendo metadatos de las especies químicas.
-        """
+        """Guarda tracks de crecimiento (matriz y especies) en HDF5."""
         with h5py.File(filename, 'w') as f:
             # En HDF5 las listas de strings a veces se guardan mejor especificando tipo o usando attrs simples
             # Convertiremos la lista a ASCII puro para compatibilidad con h5py

@@ -12,10 +12,7 @@ from . import constants as c
 
 @dataclass
 class DiskData:
-    """
-    Contenedor agnóstico para las propiedades físicas del disco (gas y polvo).
-    Los arrays 1D tienen dimensión (Nr,) y los temporales/radiales (Nt, Nr).
-    """
+    """Contenedor de propiedades físicas del disco (gas y polvo)."""
     times: np.ndarray        # (Nt,) Tiempos en segundos
     r: np.ndarray            # (Nr,) Grilla radial en cm
     
@@ -52,10 +49,7 @@ class DiskData:
 
 
 def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0) -> DiskData:
-    """
-    Lee los archivos HDF5 generados por tripodpy y los convierte
-    en un objeto DiskData.
-    """
+    """Convierte archivos HDF5 de tripodpy a un objeto DiskData."""
     
     files = sorted(glob.glob(os.path.join(datadir, 'data*.hdf5')))
     if not files:

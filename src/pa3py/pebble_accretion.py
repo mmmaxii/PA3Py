@@ -24,13 +24,7 @@ from . import constants as c
 
 
 class PebbleAccretionModule3:
-    """
-    Simula la acreción de pebbles sobre embriones planetarios.
-    Version actualizada a física pura Ormel 2017 y revisión PA.
-    
-    Esta clase ahora es completamente agnóstica de los archivos fuente (HDF5), 
-    y depende de un objeto `DiskData` y un modelo de composición `CompositionModel`.
-    """
+    """Motor físico de acreción agnóstico a HDF5 (Ormel 2017 & Drążkowska 2023)."""
 
     # Índice único de pebbles. (El último bin de polvo representa los pebbles)
     peb_idx = -1
@@ -76,9 +70,7 @@ class PebbleAccretionModule3:
         return float(np.interp(np.log(r_emb), np.log(self.data.r), field_1d))
 
     def _local(self, t: int, r_emb: float) -> dict:
-        """
-        Extrae e interpola las propiedades locales del disco en t_idx y r_emb.
-        """
+        """Extrae e interpola las propiedades locales del disco."""
         I = lambda arr: self._interp(arr[t], r_emb)
         
         Sigma_peb = self._interp(self.data.dust_Sigma[t, :, self.peb_idx], r_emb)
@@ -224,7 +216,7 @@ class PebbleAccretionModule3:
         return results
 
     def summary(self, results: dict):
-        """Imprime tabla resumen de composición final con M_iso y especies dinámicas."""
+        """Imprime tabla resumen de la composición final."""
         col_widths = []
         for sp in self.tracked_species:
             title = f"f_{sp}[%]"
@@ -263,15 +255,7 @@ class PebbleAccretionModule3:
         print(f"{SEP}\n")
 
     def calculate_isolation_mass_map(self) -> np.ndarray:
-        """
-        Calcula la masa de aislamiento teórica (Drążkowska et al. 2023 Eq 6) en toda la grilla 
-        del disco (Tiempo, Radio) sin necesidad de correr la simulación.
-        
-        Retorna:
-        --------
-        M_iso_map : np.ndarray
-            Matriz 2D de tamaño (Nt, Nr) con la masa de aislamiento en gramos.
-        """
+        """Calcula el mapa de masa de aislamiento teórico 2D."""
         h_gas = self.data.gas_Hp / self.data.r
         M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
         return np.maximum(M_iso, 0.1 * self.M_EARTH)

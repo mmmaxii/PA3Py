@@ -1,5 +1,5 @@
 """
-composition.py - Modelos para determinar la composición de la materia acretada.
+composition.py - Modelos de composición química.
 """
 
 from typing import Dict, List, Optional, Callable
@@ -7,7 +7,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 class CompositionModel(ABC):
-    """Clase base para todos los modelos de composición química."""
+    """Clase base para modelos de composición."""
     
     @abstractmethod
     def get_fractions(self, r: float, t_sec: float, t_idx: int) -> Dict[str, float]:
@@ -26,11 +26,9 @@ class CompositionModel(ABC):
 
 class SimpleWaterComposition(CompositionModel):
     """
-    Modelo por defecto clásico de PA3Py:
-    - 100% silicatos dentro de la snowline de agua.
-    - 50% silicatos, 50% H2O fuera de la snowline de agua.
-    
-    La snowline se provee como un arreglo dependiente del tiempo.
+    Modelo clásico PA3Py:
+    - 100% silicatos interior a la snowline.
+    - 50% silicatos, 50% H2O exterior a la snowline.
     """
     def __init__(self, rsnow_h2o_array: np.ndarray):
         self.rsnow = rsnow_h2o_array
@@ -48,9 +46,7 @@ class SimpleWaterComposition(CompositionModel):
 
 
 class MultiSnowlineComposition(CompositionModel):
-    """
-    Modelo de composición mediante zonas estáticas separadas por snowlines pre-calculadas.
-    """
+    """Zonas estáticas separadas por snowlines pre-calculadas."""
     def __init__(self, snowlines: Dict[str, np.ndarray], zone_abundances: List[Dict[str, float]]):
         self.snowline_names = list(snowlines.keys())
         self.snowlines = snowlines
@@ -81,10 +77,7 @@ class MultiSnowlineComposition(CompositionModel):
 
 
 class FunctionComposition(CompositionModel):
-    """
-    Modelo Funcional donde el usuario inyecta una función de Python para definir
-    su química dinámica de forma directa y legible.
-    """
+    """Química dinámica definida por el usuario mediante una función Python."""
     def __init__(self, user_func: Callable[[float, float], Dict[str, float]], species: Optional[List[str]] = None):
         """
         Parámetros:

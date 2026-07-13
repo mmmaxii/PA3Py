@@ -11,24 +11,7 @@ from . import constants as c
 def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma', 
                    cmap: str = 'magma', vmin: float = None, vmax: float = None,
                    t_unit: str = 'Myr', show_snowlines: bool = True):
-    """
-    Genera un diagrama de Hovmöller (Radio vs Tiempo) para una propiedad del disco.
-
-    Parámetros:
-    -----------
-    disk : DiskData
-        El objeto que contiene los datos temporales del disco.
-    field : str
-        El campo a graficar. Opciones: 'dust_Sigma', 'gas_Sigma', 'eps' (relación polvo/gas).
-    cmap : str
-        Mapa de colores para matplotlib.
-    vmin, vmax : float, opcional
-        Límites de la escala de color logarítmica. Si no se dan, usan el percentil 2 y 98.
-    t_unit : str
-        Unidad de tiempo ('yr', 'kyr', 'Myr').
-    show_snowlines : bool
-        Si True, sobrepone las líneas de hielo extraídas de disk.hdf5_snowlines.
-    """
+    """Genera un diagrama de Hovmöller (Radio vs Tiempo) para una propiedad."""
     # 1. Extraer los datos 2D (Tiempo, Radio)
     if field == 'dust_Sigma':
         # Sumamos sobre todos los tamaños de polvo (último índice)
