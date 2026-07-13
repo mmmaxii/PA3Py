@@ -41,11 +41,13 @@ class PA3Py:
         """Inicializa el motor de física subyacente."""
         self.engine = PebbleAccretionModule3(self.disk, comp_model=self.comp)
         
-    def set_custom_chemistry(self, user_func: Callable, species: List[str]):
+    def set_custom_chemistry(self, user_func: Callable, species: Optional[List[str]] = None):
         """
         Atajo para redefinir la química de la simulación usando una función de Python.
         
         Ejemplo:
+            sim.set_custom_chemistry(mi_funcion)
+            # O con especies explícitas si la función no es auto-ejecutable:
             sim.set_custom_chemistry(mi_funcion, ["silicatos", "H2O", "CO2"])
         """
         self.comp = FunctionComposition(user_func, species)

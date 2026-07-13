@@ -88,28 +88,44 @@ class FunctionComposition(CompositionModel):
     Modelo Funcional donde el usuario inyecta una función de Python para definir
     su química dinámica de forma directa y legible.
     """
-    def __init__(self, user_func: Callable[[float, float], Dict[str, float]], species: List[str]):
+    def __init__(self, user_func: Callable[[float, float], Dict[str, float]], species: Optional[List[str]] = None):
         """
         Parámetros:
         -----------
         user_func: callable
             Función del usuario. Debe recibir `r` (en cm) y `t` (en segundos)
             y retornar un diccionario con las fracciones, ej: {"silicates": 0.4, "H2O": 0.6}.
-        species: List[str]
-            Lista explícita de todas las especies químicas que tu función podría retornar.
-            Esto es necesario para que el simulador inicialice las columnas correctas en la tabla.
+        species: List[str], opcional
+            Lista explícita de las especies químicas. Si no se provee, PA3Py la deducirá
+            automáticamente ejecutando la función con un valor de prueba (r=1.0, t=0.0).
         """
         self.user_func = user_func
-        self.species = species
+        
+        if species is None:
+            # Auto-detección: Inyectamos un valor de prueba para ver qué diccionario retorna
+            try:
+                dummy_result = self.user_func(1.0, 0.0)
+                if not isinstance(dummy_result, dict):
+                    raise ValueError(f"La función de usuario debe retornar un dict. Retornó: {type(dummy_result)}")
+                self.species = list(dummy_result.keys())
+            except Exception as e:
+                raise RuntimeError(f"Fallo en la auto-detección de especies de la función: {e}\n"
+                                   "Provee la lista 'species' explícitamente.")
+        else:
+            self.species = species
         
     def get_fractions(self, r: float, t_sec: float, t_idx: int) -> Dict[str, float]:
         raw_fracs = self.user_func(r, t_sec)
         total = sum(raw_fracs.values())
         if total > 0:
-            # Normalizar y devolver, rellenando con ceros las especies faltantes
+            # Normalizar y devolver, rellenando con ceros las especies que no aparezcan esta vez
             norm_fracs = {sp: 0.0 for sp in self.species}
             for k, v in raw_fracs.items():
-                if k in norm_fracs:
+                if k not in norm_fracs:
+                    # Si la función retornó una especie nueva dinámicamente, la ignoramos o fallamos.
+                    # Aquí la ignoramos pero lo ideal es detectarlas todas al inicio.
+                    pass
+                else:
                     norm_fracs[k] = v / total
             return norm_fracs
         return {sp: 0.0 for sp in self.species}

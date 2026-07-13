@@ -10,7 +10,7 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 
 from pa3py.data import load_tripodpy_hdf5
-from pa3py.composition import SimpleWaterComposition
+from pa3py.composition import SimpleWaterComposition, FunctionComposition
 from pa3py.pebble_accretion import PebbleAccretionModule3
 from pa3py.snowline import generate_rsnow_array
 
@@ -92,8 +92,7 @@ def test_out_of_bounds_embryo():
     print("="*80)
     
     disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
-    comp = SimpleWaterComposition(generate_rsnow_array(disk.times))
-    sim = PebbleAccretionModule3(disk, comp_model=comp)
+    sim = PebbleAccretionModule3(disk)
     
     try:
         sim.run_growth(embryo_locations_AU=[200.0])
@@ -101,8 +100,39 @@ def test_out_of_bounds_embryo():
     except ValueError as e:
         print("[OK] Boundary check passed successfully:", e)
 
+def test_multispecies_dynamic():
+    """Prueba que el motor maneje N especies dinámicamente."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+        
+    print("\n" + "="*80)
+    print("TEST: MULTISPECIES DYNAMIC TRACKING")
+    print("="*80)
+    
+    disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
+    
+    def exotic_chem(r, t):
+        return {'Iron': 0.4, 'Carbon': 0.2, 'Ice': 0.4}
+        
+    comp = FunctionComposition(exotic_chem)
+    sim = PebbleAccretionModule3(disk, comp_model=comp)
+    
+    # 3 species: Iron, Carbon, Ice
+    assert len(sim.tracked_species) == 3
+    assert 'Iron' in sim.tracked_species
+    
+    results = sim.run_growth([5.0], M0_g=1e-3 * sim.M_EARTH)
+    
+    # Check history structure: time, m_core, m_iso, sp1, sp2, sp3
+    hist = results[5.0]
+    assert hist.shape[1] == 6 
+    
+    sim.summary(results)
+    print("[OK] Multispecies dynamic tracking works!")
+
 if __name__ == "__main__":
     test_smooth_run()
     test_sinusoidal_run()
     test_strong_gap_run()
     test_out_of_bounds_embryo()
+    test_multispecies_dynamic()

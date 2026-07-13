@@ -63,6 +63,7 @@ class PebbleAccretionModule3:
         else:
             self.comp = comp_model
             
+        self.tracked_species = self.comp.get_species()
 
     # ══════════════════════════════════════════════════════════════════════
     # Helpers Interp
@@ -177,12 +178,10 @@ class PebbleAccretionModule3:
             
         locs_outer_to_inner = sorted(embryo_locations_AU, reverse=True)
         M_core   = {r: float(M0_g) for r in locs_outer_to_inner}
-        
         # Inicializar composición (semilla 100% de la especie "rocosa" primaria)
-        species = self.comp.get_species()
-        primary_rock = "silicates" if "silicates" in species else species[0]
+        primary_rock = "silicates" if "silicates" in self.tracked_species else self.tracked_species[0]
         
-        M_X = {r: {sp: 0.0 for sp in species} for r in locs_outer_to_inner}
+        M_X = {r: {sp: 0.0 for sp in self.tracked_species} for r in locs_outer_to_inner}
         for r in locs_outer_to_inner:
             M_X[r][primary_rock] = float(M0_g)
             
@@ -216,33 +215,40 @@ class PebbleAccretionModule3:
 
                 # Calcular partición de masa acretada usando el modelo de composición
                 fractions = self.comp.get_fractions(r_emb, self.data.times[i], i)
-                for sp in species:
+                for sp in self.tracked_species:
                     M_X[r_au][sp] += fractions.get(sp, 0.0) * dM
 
                 M_core[r_au] += dM
 
-                # Guardamos: t, M_core, M_H2O, M_silicates (por legacy) o M_X completo
-                histories[r_au].append((
+                # Guardamos: t, M_core, M_iso, y luego las masas de cada especie
+                hist_row = [
                     self.data.times[i], 
                     M_core[r_au], 
-                    M_X[r_au].get('H2O', 0.0),
-                    M_X[r_au].get('silicates', 0.0), 
                     M_iso
-                ))
-
-
+                ]
+                for sp in self.tracked_species:
+                    hist_row.append(M_X[r_au].get(sp, 0.0))
+                    
+                histories[r_au].append(hist_row)
 
         results = {
-            r_au: (np.array(histories[r_au]) if histories[r_au] else np.empty((0, 5)))
+            r_au: (np.array(histories[r_au]) if histories[r_au] else np.empty((0, 3 + len(self.tracked_species))))
             for r_au in embryo_locations_AU
         }
         return results
 
     def summary(self, results: dict):
-        """Imprime tabla resumen de composición final con M_iso."""
-        SEP = '-' * 70
+        """Imprime tabla resumen de composición final con M_iso y especies dinámicas."""
+        n_sp = len(self.tracked_species)
+        header_len = 35 + (n_sp * 11)
+        SEP = '-' * header_len
         print(f"\n{SEP}")
-        print(f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11} {'f_H2O [%]':>10} {'f_Sil [%]':>10}")
+        
+        # Cabecera dinámica
+        header = f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11}"
+        for sp in self.tracked_species:
+            header += f" {'f_' + sp[:4] + '[%]':>10}"
+        print(header)
         print(SEP)
         
         for r_au, hist in results.items():
@@ -250,17 +256,23 @@ class PebbleAccretionModule3:
                 print(f"{r_au:>8.2f}  -- sin acreción")
                 continue
             
-            # hist[-1] format: [time, M_core, M_H2O, M_sil, M_iso]
-            _, M, M_H2O, M_sil, M_iso = hist[-1]
+            # hist[-1] format: [time, M_core, M_iso, M_sp1, M_sp2...]
+            row = hist[-1]
+            M = row[1]
+            M_iso = row[2]
+            M_species = row[3:]
             
-            M_total = M_H2O + M_sil
-            if M_total <= 0:
-                f_h2o, f_sil = 0.0, 100.0
-            else:
-                f_h2o = 100 * M_H2O / M_total
-                f_sil = 100 * M_sil / M_total
+            M_total = sum(M_species)
             
-            print(f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}  {f_h2o:>9.1f}  {f_sil:>9.1f}")
+            line = f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}"
+            for m_sp in M_species:
+                if M_total <= 0:
+                    f_sp = 0.0
+                else:
+                    f_sp = 100 * m_sp / M_total
+                line += f"  {f_sp:>9.1f}"
+                
+            print(line)
         print(f"{SEP}\n")
 
     def calculate_isolation_mass_map(self) -> np.ndarray:
