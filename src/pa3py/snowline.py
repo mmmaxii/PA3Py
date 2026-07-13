@@ -15,21 +15,9 @@ from . import constants as c
 _current_dir = os.path.dirname(__file__)
 _csv_path = os.path.join(_current_dir, "data_files", "oka_et_al_2011_data_corrected.csv")
 
-# Leer datos manualmente
-_mdot_list = []
-_rsnow_list = []
-with open(_csv_path, 'r') as f:
-    lines = f.readlines()
-    for line in lines[1:]: # Saltar encabezado
-        line = line.strip()
-        if not line: continue
-        parts = line.split(';')
-        if len(parts) == 2:
-            _mdot_list.append(float(parts[0]))
-            _rsnow_list.append(float(parts[1]))
-
-_mdot_raw = np.array(_mdot_list)
-_rsnow_raw = np.array(_rsnow_list)
+# Leer datos velozmente con NumPy
+data = np.loadtxt(_csv_path, delimiter=';', skiprows=1)
+_mdot_raw, _rsnow_raw = data[:, 0], data[:, 1]
 
 # Asegurar orden monotónico para la interpolación log-log
 _sort_idx = np.argsort(_mdot_raw)
