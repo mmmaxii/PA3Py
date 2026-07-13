@@ -16,8 +16,8 @@ _current_dir = os.path.dirname(__file__)
 _csv_path = os.path.join(_current_dir, "data_files", "oka_et_al_2011_data_corrected.csv")
 
 # Leer datos velozmente con NumPy
-data = np.loadtxt(_csv_path, delimiter=';', skiprows=1)
-_mdot_raw, _rsnow_raw = data[:, 0], data[:, 1]
+_data = np.loadtxt(_csv_path, delimiter=';', skiprows=1)
+_mdot_raw, _rsnow_raw = _data[:, 0], _data[:, 1]
 
 # Asegurar orden monotónico para la interpolación log-log
 _sort_idx = np.argsort(_mdot_raw)
@@ -57,30 +57,12 @@ def mdot_time(t_myr, eta=1.5):
     return mdot_1myr * (t_myr)**(-eta)
 
 def r_snow_time_cgs(t_sec, eta=1.5, r_min_au=0.5):
-    """
-    Dada el tiempo en segundos (sim.t), calcula la posición de la snowline
-    en centímetros (CGS), aplicando un corte inferior estricto dictado por la grilla.
-    """
-    # 1. Convertir t_sec a Myr
+    """Posición de la snowline en CGS dado el tiempo en segundos."""
     t_myr = t_sec / (1e6 * c.YEAR)
-    
-    # 2. Obtener Mdot
-    m = mdot_time(t_myr, eta)
-    
-    # 3. Obtener r_snow en AU
-    # Si Mdot > 1e-7, capamos Mdot para que r_snow no exceda ~2.73 AU
-    m_eff = min(m, 1e-7)
-    r_au = get_rsnow_from_mdot_au(m_eff)
-    
-    # 4. Forzar límite inferior dinámico (r_min de la grilla) y límite superior de 2.73 AU
-    r_au_limited = np.clip(r_au, r_min_au, 2.73)
-    
-    # 5. Retornar en CGS
-    return float(r_au_limited * c.AU)
+    m_eff = min(mdot_time(t_myr, eta), 1e-7)  # cap para r_snow ≤ 2.73 AU
+    r_au  = np.clip(get_rsnow_from_mdot_au(m_eff), r_min_au, 2.73)
+    return float(r_au * c.AU)
 
 def generate_rsnow_array(times_sec: np.ndarray, eta: float = 1.5, r_min_au: float = 0.5) -> np.ndarray:
-    """
-    Genera un arreglo de posiciones de la snowline en función del tiempo.
-    Ideal para inyectar en los CompositionModels.
-    """
+    """Arreglo de posiciones de la snowline en CGS para inyectar en CompositionModels."""
     return np.array([r_snow_time_cgs(t, eta=eta, r_min_au=r_min_au) for t in times_sec])

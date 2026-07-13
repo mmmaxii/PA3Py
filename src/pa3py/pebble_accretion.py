@@ -17,7 +17,6 @@ Unidades internas: CGS (g, cm, s).
 
 import numpy as np
 
-# Importar constantes y tipos
 from .data import DiskData
 from .composition import CompositionModel, SimpleWaterComposition
 from . import constants as c
@@ -43,20 +42,11 @@ class PebbleAccretionModule3:
             usando la snowline de agua que venga del HDF5 (si existe).
         """
         self.data = disk_data
-        
-        # Referencias a constantes físicas (ahora desde constants.py)
-        self.M_EARTH = c.M_EARTH
-        self.M_SUN   = c.M_SUN
-        self.G_CGS   = c.G
-        self.AU      = c.AU
-        
         if comp_model is None:
-            # Fallback a la clásica water snowline de los datos base
             rsnow_h2o = self.data.hdf5_snowlines.get('H2O', np.zeros(self.data.Nt))
             self.comp = SimpleWaterComposition(rsnow_h2o)
         else:
             self.comp = comp_model
-            
         self.tracked_species = self.comp.get_species()
 
     # ══════════════════════════════════════════════════════════════════════
@@ -79,7 +69,6 @@ class PebbleAccretionModule3:
         H_gas = I(self.data.gas_Hp)
         H_peb = self._interp(self.data.dust_H[t, :, self.peb_idx], r_emb)
         
-        # OmegaK puede ser 1D o 2D
         if self.data.Omega_K.ndim == 2:
             omega_1d = self.data.Omega_K[t]
         else:
@@ -105,24 +94,21 @@ class PebbleAccretionModule3:
         return 2 * np.pi * r_emb * Sigma_peb * abs(v_r)
 
     def _isolation_mass(self, r_emb: float, t: int) -> float:
-        """
-        M_iso_peb = 25 M_earth * (H_gas/r / 0.05)^3 * (M_star/M_sun)
-        """
-        p = self._local(t, r_emb)
-        h_gas = p['H_gas'] / r_emb
-        M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
-        return max(M_iso, 0.1 * self.M_EARTH)
+        """Drążkowska 2023 Eq.6: M_iso = 25 M⊕ (h/0.05)³ (M★/M☉)"""
+        h_gas = self._interp(self.data.gas_Hp[t], r_emb) / r_emb
+        M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * c.M_EARTH
+        return max(M_iso, 0.1 * c.M_EARTH)
 
     def _accretion_rate(self, M_core: float, r_emb: float, t: int) -> float:
         if M_core <= 0: return 0.0
         p = self._local(t, r_emb)
         if p['Sigma_peb'] < 1e-30: return 0.0
 
-        G, M, Omega = self.G_CGS, M_core, p['Omega']
+        G, M, Omega = c.G, M_core, p['Omega']
         St, v_hw, Sigma = p['St'], p['v_hw'], p['Sigma_peb']
         
         t_stop = St / Omega
-        M_PA_onset = St * (p['eta']**3) * (self.data.M_star * self.M_SUN)
+        M_PA_onset = St * (p['eta']**3) * (self.data.M_star * c.M_SUN)
         H_peb = max(p['H_peb'], 1e-10 * p['H_gas'])
         rho_peb = Sigma / (np.sqrt(2 * np.pi) * H_peb)
 
@@ -141,7 +127,7 @@ class PebbleAccretionModule3:
             Mdot_2D = np.sqrt(8 * G * M * t_stop * v_hw) * Sigma
             b_col   = np.sqrt(2 * G * M * t_stop / max(v_hw, 1e-5))
         else:
-            R_H     = r_emb * (M / (3 * (self.data.M_star * self.M_SUN)))**(1/3)
+            R_H     = r_emb * (M / (3 * self.data.M_star * c.M_SUN))**(1/3)
             Mdot_2D = 2 * R_H**2 * Omega * St**(2/3) * Sigma
             b_col   = (St**(1/3)) * R_H
             
@@ -156,21 +142,16 @@ class PebbleAccretionModule3:
     # ══════════════════════════════════════════════════════════════════════
 
     def run_growth(self, embryo_locations_AU: list, M0_g: float = None) -> dict:
-        # Validar límites de la grilla
-        r_min_cgs = self.data.r[0]
-        r_max_cgs = self.data.r[-1]
+        r_min_au, r_max_au = self.data.r[0] / c.AU, self.data.r[-1] / c.AU
         for r_au in embryo_locations_AU:
-            r_cgs = r_au * self.AU
-            if r_cgs < r_min_cgs or r_cgs > r_max_cgs:
-                raise ValueError(f"El embrión en {r_au} AU está fuera de los límites del disco "
-                                 f"({(r_min_cgs/self.AU):.2f} AU - {(r_max_cgs/self.AU):.2f} AU).")
+            if not (r_min_au <= r_au <= r_max_au):
+                raise ValueError(f"El embrión en {r_au:.2f} AU fuera del disco ({r_min_au:.2f}–{r_max_au:.2f} AU).")
 
         if M0_g is None:
-            M0_g = 1e-3 * self.M_EARTH
+            M0_g = 1e-3 * c.M_EARTH
             
         locs_outer_to_inner = sorted(embryo_locations_AU, reverse=True)
-        M_core   = {r: float(M0_g) for r in locs_outer_to_inner}
-        # Inicializar composición (semilla 100% de la especie "rocosa" primaria)
+        M_core = {r: float(M0_g) for r in locs_outer_to_inner}
         primary_rock = "silicates" if "silicates" in self.tracked_species else self.tracked_species[0]
         
         M_X = {r: {sp: float(M0_g) if sp == primary_rock else 0.0 for sp in self.tracked_species} for r in locs_outer_to_inner}
@@ -184,7 +165,7 @@ class PebbleAccretionModule3:
             flux_consumed = 0.0
 
             for r_au in locs_outer_to_inner:
-                r_emb = r_au * self.AU
+                r_emb = r_au * c.AU
 
                 M_iso = self._isolation_mass(r_emb, i)
                 
@@ -199,14 +180,12 @@ class PebbleAccretionModule3:
                     dM = min(dM, max(0.0, M_iso - M_core[r_au]))
                     flux_consumed += Mdot_core_r
 
-                    # Calcular partición de masa acretada usando el modelo de composición
                     fractions = self.comp.get_fractions(r_emb, self.data.times[i], i)
                     for sp in self.tracked_species:
                         M_X[r_au][sp] += fractions.get(sp, 0.0) * dM
 
                     M_core[r_au] += dM
 
-                # Guardamos: t, M_core, M_iso, y luego las masas de cada especie
                 histories[r_au].append([self.data.times[i], M_core[r_au], M_iso] + [M_X[r_au].get(sp, 0.0) for sp in self.tracked_species])
 
         results = {
@@ -217,20 +196,11 @@ class PebbleAccretionModule3:
 
     def summary(self, results: dict):
         """Imprime tabla resumen de la composición final."""
-        col_widths = []
-        for sp in self.tracked_species:
-            title = f"f_{sp}[%]"
-            col_widths.append(max(10, len(title) + 2))
-            
-        header_len = 35 + sum(col_widths)
-        SEP = '-' * header_len
+        col_widths = [max(10, len(f"f_{sp}[%]") + 2) for sp in self.tracked_species]
+        SEP = '-' * (35 + sum(col_widths))
         print(f"\n{SEP}")
-        
-        # Cabecera dinámica
         header = f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11}"
-        for i, sp in enumerate(self.tracked_species):
-            title = f"f_{sp}[%]"
-            header += f"{title:>{col_widths[i]}}"
+        header += "".join(f"{f'f_{sp}[%]':>{w}}" for sp, w in zip(self.tracked_species, col_widths))
         print(header)
         print(SEP)
         
@@ -243,12 +213,9 @@ class PebbleAccretionModule3:
             
             M_total = sum(M_species)
             
-            line = f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}"
+            line = f"{r_au:>8.2f}  {M/c.M_EARTH:>11.3f}  {M_iso/c.M_EARTH:>11.2f}"
             for i, m_sp in enumerate(M_species):
-                if M_total <= 0:
-                    f_sp = 0.0
-                else:
-                    f_sp = 100 * m_sp / M_total
+                f_sp = 0.0 if M_total <= 0 else 100 * m_sp / M_total
                 line += f"{f_sp:>{col_widths[i]}.1f}"
                 
             print(line)
@@ -257,5 +224,5 @@ class PebbleAccretionModule3:
     def calculate_isolation_mass_map(self) -> np.ndarray:
         """Calcula el mapa de masa de aislamiento teórico 2D."""
         h_gas = self.data.gas_Hp / self.data.r
-        M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
-        return np.maximum(M_iso, 0.1 * self.M_EARTH)
+        M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * c.M_EARTH
+        return np.maximum(M_iso, 0.1 * c.M_EARTH)

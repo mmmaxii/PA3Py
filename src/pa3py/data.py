@@ -7,7 +7,7 @@ import glob
 import h5py
 import numpy as np
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict
 from . import constants as c
 
 @dataclass
@@ -69,7 +69,7 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
     for fpath in files:
         with h5py.File(fpath, 'r') as f:
             t_s = float(f['t'][()])
-            if t_s < t_min_yr * 3.156e7:
+            if t_s < t_min_yr * c.YEAR:
                 continue
 
             times_list.append(t_s)
@@ -89,18 +89,16 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
             if 'dust/r_snow' in f:
                 rsnow['H2O'].append(float(f['dust/r_snow'][()]))
             else:
-                key = f'grid/rsnow_H2O'
-                rsnow['H2O'].append(float(f[key][()]) if key in f else np.nan)
+                rsnow_key = 'grid/rsnow_H2O'
+                rsnow['H2O'].append(float(f[rsnow_key][()]) if rsnow_key in f else np.nan)
 
     times = np.array(times_list)
     
-    # OmegaK (2D o 1D analítico)
+    # OmegaK: 2D del HDF5 o analítico 1D
     if OmegaK_list:
         Omega_K = np.array(OmegaK_list)
     else:
-        # G está en CGS en constants, M_star está en masas solares
-        G_M = c.G * (M_star * c.M_SUN)
-        Omega_K = np.sqrt(G_M / r_grid**3)
+        Omega_K = np.sqrt(c.G * M_star * c.M_SUN / r_grid**3)
 
     rsnow['H2O'] = np.array(rsnow['H2O'])
 

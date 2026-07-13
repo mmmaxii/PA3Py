@@ -10,6 +10,7 @@ from .composition import CompositionModel, SimpleWaterComposition, FunctionCompo
 from .pebble_accretion import PebbleAccretionModule3
 from .snowline import generate_rsnow_array
 from .plotting import plot_hovmoller
+from . import constants as c
 
 class PA3Py:
     """
@@ -28,17 +29,7 @@ class PA3Py:
         """
         self.data_dir = data_dir
         self.disk = load_tripodpy_hdf5(data_dir)
-        
-        if comp_model is None:
-            rsnow = generate_rsnow_array(self.disk.times)
-            self.comp = SimpleWaterComposition(rsnow)
-        else:
-            self.comp = comp_model
-            
-        self._init_engine()
-
-    def _init_engine(self):
-        """Inicializa el motor de física subyacente."""
+        self.comp = comp_model or SimpleWaterComposition(generate_rsnow_array(self.disk.times))
         self.engine = PebbleAccretionModule3(self.disk, comp_model=self.comp)
         
     def set_custom_chemistry(self, user_func: Callable, species: Optional[List[str]] = None):
@@ -49,7 +40,7 @@ class PA3Py:
             sim.set_custom_chemistry(mi_funcion, ["silicatos", "H2O"])
         """
         self.comp = FunctionComposition(user_func, species)
-        self._init_engine()
+        self.engine = PebbleAccretionModule3(self.disk, comp_model=self.comp)
         
     def run_growth(self, embryos_au: list, m_seed_me: float = 1e-3) -> dict:
         """
@@ -67,7 +58,7 @@ class PA3Py:
         dict
             Resultados de la evolución de masa en el tiempo.
         """
-        results = self.engine.run_growth(embryos_au, M0_g=m_seed_me * self.engine.M_EARTH)
+        results = self.engine.run_growth(embryos_au, M0_g=m_seed_me * c.M_EARTH)
         self.engine.summary(results)
         return results
 
@@ -83,13 +74,11 @@ class PA3Py:
         return self.engine.calculate_isolation_mass_map()
 
     def save_results(self, results: dict, filename: str):
-        """Guarda tracks de crecimiento (matriz y especies) en HDF5."""
+        """Guarda tracks de crecimiento en HDF5."""
         with h5py.File(filename, 'w') as f:
-            # En HDF5 las listas de strings a veces se guardan mejor especificando tipo o usando attrs simples
-            # Convertiremos la lista a ASCII puro para compatibilidad con h5py
-            ascii_species = [s.encode('ascii', 'ignore') for s in self.engine.tracked_species]
-            f.attrs['tracked_species'] = ascii_species
-            f.attrs['M_EARTH'] = self.engine.M_EARTH
+            # Encode species como bytes para compatibilidad h5py
+            f.attrs['tracked_species'] = [s.encode('ascii') for s in self.engine.tracked_species]
+            f.attrs['M_EARTH'] = c.M_EARTH
             
             tracks = f.create_group('tracks')
             for r_au, track_data in results.items():
@@ -97,16 +86,8 @@ class PA3Py:
                 dset.attrs['r_au'] = float(r_au)
 
     @staticmethod
-    def load_results(filename: str) -> tuple:
-        """
-        Carga los tracks de crecimiento desde un archivo HDF5.
-        
-        Retorna:
-        --------
-        (results, tracked_species)
-            results: dict donde la llave es el r_au (float) y el valor es la matriz de historia.
-            tracked_species: Lista de strings con los nombres de las especies en el mismo orden que la matriz.
-        """
+    def load_results(filename: str) -> tuple[dict, list]:
+        """Carga tracks de crecimiento desde HDF5. Retorna (results_dict, species_list)."""
         results = {}
         with h5py.File(filename, 'r') as f:
             raw_species = list(f.attrs['tracked_species'])

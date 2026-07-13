@@ -40,7 +40,7 @@ def test_smooth_run():
     
     # 4. Probar en un rango de posiciones (1, 3, 5, 10, 15 AU)
     embryos = [1.0, 3.0, 5.0, 10.0, 15.0]
-    results = sim.run_growth(embryos, M0_g=1e-3 * sim.M_EARTH)
+    results = sim.run_growth(embryos, M0_g=1e-3 * c.M_EARTH)
 
     sim.summary(results)
 
@@ -59,7 +59,7 @@ def test_sinusoidal_run():
     sim = PebbleAccretionModule3(disk, comp_model=comp)
     
     embryos = [3.0, 5.0, 7.0, 10.0]
-    results = sim.run_growth(embryos, M0_g=1e-3 * sim.M_EARTH)
+    results = sim.run_growth(embryos, M0_g=1e-3 * c.M_EARTH)
     sim.summary(results)
 
 def test_strong_gap_run():
@@ -77,7 +77,7 @@ def test_strong_gap_run():
     sim = PebbleAccretionModule3(disk, comp_model=comp)
     
     embryos = [8.0, 10.0, 12.0]
-    results = sim.run_growth(embryos, M0_g=1e-3 * sim.M_EARTH)
+    results = sim.run_growth(embryos, M0_g=1e-3 * c.M_EARTH)
     sim.summary(results)
 
 def test_out_of_bounds_embryo():
@@ -119,7 +119,7 @@ def test_multispecies_dynamic():
     assert len(sim.tracked_species) == 3
     assert 'Iron' in sim.tracked_species
     
-    results = sim.run_growth([5.0], M0_g=1e-3 * sim.M_EARTH)
+    results = sim.run_growth([5.0], M0_g=1e-3 * c.M_EARTH)
     
     # Check history structure: time, m_core, m_iso, sp1, sp2, sp3
     hist = results[5.0]

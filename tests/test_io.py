@@ -42,7 +42,7 @@ def test_hdf5_io():
     print(f"[OK] Resultados cargados desde {test_file}")
     
     # Verificaciones
-    assert loaded_species == ['Iron', 'Water'], f"Error: Especies cargadas {loaded_species} != ['Iron', 'Water']"
+    assert set(loaded_species) == {'Iron', 'Water'}, f"Error: Especies cargadas {loaded_species} != {{'Iron', 'Water'}}"
     assert len(results_loaded) == 3, "Error: Faltan embriones"
     assert 5.0 in results_loaded, "Error: Llave 5.0 no se preservó"
     

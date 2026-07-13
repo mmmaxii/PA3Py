@@ -110,16 +110,7 @@ class FunctionComposition(CompositionModel):
         raw_fracs = self.user_func(r, t_sec)
         total = sum(raw_fracs.values())
         if total > 0:
-            # Normalizar y devolver, rellenando con ceros las especies que no aparezcan esta vez
-            norm_fracs = {sp: 0.0 for sp in self.species}
-            for k, v in raw_fracs.items():
-                if k not in norm_fracs:
-                    # Si la función retornó una especie nueva dinámicamente, la ignoramos o fallamos.
-                    # Aquí la ignoramos pero lo ideal es detectarlas todas al inicio.
-                    pass
-                else:
-                    norm_fracs[k] = v / total
-            return norm_fracs
+            return {sp: raw_fracs.get(sp, 0.0) / total for sp in self.species}
         return {sp: 0.0 for sp in self.species}
 
     def get_species(self) -> List[str]:
