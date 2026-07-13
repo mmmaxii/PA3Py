@@ -181,9 +181,7 @@ class PebbleAccretionModule3:
         # Inicializar composición (semilla 100% de la especie "rocosa" primaria)
         primary_rock = "silicates" if "silicates" in self.tracked_species else self.tracked_species[0]
         
-        M_X = {r: {sp: 0.0 for sp in self.tracked_species} for r in locs_outer_to_inner}
-        for r in locs_outer_to_inner:
-            M_X[r][primary_rock] = float(M0_g)
+        M_X = {r: {sp: float(M0_g) if sp == primary_rock else 0.0 for sp in self.tracked_species} for r in locs_outer_to_inner}
             
         histories= {r: [] for r in locs_outer_to_inner}
 
@@ -217,15 +215,7 @@ class PebbleAccretionModule3:
                     M_core[r_au] += dM
 
                 # Guardamos: t, M_core, M_iso, y luego las masas de cada especie
-                hist_row = [
-                    self.data.times[i], 
-                    M_core[r_au], 
-                    M_iso
-                ]
-                for sp in self.tracked_species:
-                    hist_row.append(M_X[r_au].get(sp, 0.0))
-                    
-                histories[r_au].append(hist_row)
+                histories[r_au].append([self.data.times[i], M_core[r_au], M_iso] + [M_X[r_au].get(sp, 0.0) for sp in self.tracked_species])
 
         results = {
             r_au: (np.array(histories[r_au]) if histories[r_au] else np.empty((0, 3 + len(self.tracked_species))))
@@ -257,11 +247,7 @@ class PebbleAccretionModule3:
                 print(f"{r_au:>8.2f}  -- sin acreción")
                 continue
             
-            # hist[-1] format: [time, M_core, M_iso, M_sp1, M_sp2...]
-            row = hist[-1]
-            M = row[1]
-            M_iso = row[2]
-            M_species = row[3:]
+            _, M, M_iso, *M_species = hist[-1]
             
             M_total = sum(M_species)
             
@@ -286,9 +272,6 @@ class PebbleAccretionModule3:
         M_iso_map : np.ndarray
             Matriz 2D de tamaño (Nt, Nr) con la masa de aislamiento en gramos.
         """
-        M_iso_map = np.zeros((self.data.Nt, self.data.Nr))
-        for t in range(self.data.Nt):
-            h_gas = self.data.gas_Hp[t, :] / self.data.r
-            M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
-            M_iso_map[t, :] = np.maximum(M_iso, 0.1 * self.M_EARTH)
-        return M_iso_map
+        h_gas = self.data.gas_Hp / self.data.r
+        M_iso = 25 * (h_gas / 0.05)**3 * self.data.M_star * self.M_EARTH
+        return np.maximum(M_iso, 0.1 * self.M_EARTH)
