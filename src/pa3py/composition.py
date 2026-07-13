@@ -59,10 +59,7 @@ class MultiSnowlineComposition(CompositionModel):
         if len(zone_abundances) != len(snowlines) + 1:
             raise ValueError("Debes proveer exactamente N+1 diccionarios de abundancias para N snowlines.")
             
-        all_sps = set()
-        for abund in self.zone_abundances:
-            all_sps.update(abund.keys())
-        self.species = list(all_sps)
+        self.species = list(set().union(*(abund.keys() for abund in self.zone_abundances)))
 
     def get_fractions(self, r: float, t_sec: float, t_idx: int) -> Dict[str, float]:
         zone_idx = 0
@@ -102,23 +99,17 @@ class FunctionComposition(CompositionModel):
         self.user_func = user_func
         
         if species is None:
-            # Auto-detección: Hacemos un barrido logarítmico en r y t para entrar 
-            # a todas las posibles ramas "if" de la función del usuario y capturar todas las especies.
             try:
-                self.species = []
-                for r_test in [1e11, 1e12, 1e13, 1e14, 1e15, 1e16]:
-                    for t_test in [0.0, 1e10, 1e12, 1e14]:
-                        res = self.user_func(r_test, t_test)
-                        if not isinstance(res, dict):
-                            raise ValueError(f"La función debe retornar un dict. Retornó: {type(res)}")
-                        for k in res.keys():
-                            if k not in self.species:
-                                self.species.append(k)
+                res_sets = [set(self.user_func(r, t).keys()) 
+                            for r in [1e11, 1e12, 1e13, 1e14, 1e15, 1e16] 
+                            for t in [0.0, 1e10, 1e12, 1e14]]
+                self.species = list(set.union(*res_sets)) if res_sets else []
                 if not self.species:
-                    raise ValueError("La función de usuario devolvió diccionarios vacíos en todos los tests.")
+                    raise ValueError("La función devolvió diccionarios vacíos en todos los tests.")
+            except AttributeError:
+                raise ValueError("La función debe retornar un dict (con el método .keys()).")
             except Exception as e:
-                raise RuntimeError(f"Fallo en la auto-detección de especies de la función: {e}\n"
-                                   "Provee la lista 'species' explícitamente.")
+                raise RuntimeError(f"Fallo en la auto-detección de especies: {e}\nProvee 'species' explícitamente.")
         else:
             self.species = species
         
