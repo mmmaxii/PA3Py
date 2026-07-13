@@ -50,34 +50,21 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
     # Limpiar ceros para escala log
     Z = np.clip(Z, 1e-20, None)
     
-    # Eje Temporal
-    if t_unit == 'Myr':
-        t_factor = c.YEAR * 1e6
-        t_label = "Tiempo [Myr]"
-    elif t_unit == 'kyr':
-        t_factor = c.YEAR * 1e3
-        t_label = "Tiempo [kyr]"
-    else:
-        t_factor = c.YEAR
-        t_label = "Tiempo [años]"
+    t_map = {'Myr': (c.YEAR * 1e6, "Tiempo [Myr]"), 'kyr': (c.YEAR * 1e3, "Tiempo [kyr]")}
+    t_factor, t_label = t_map.get(t_unit, (c.YEAR, "Tiempo [años]"))
         
     t_array = disk.times / t_factor
     r_array = disk.r / c.AU
 
-    # Ejes extendidos para pcolormesh (bordes logarítmicos robustos)
+    # Ejes extendidos robustos para pcolormesh
     def _log_edges(arr):
-        arr = np.maximum(arr, 1e-10) # Evitar log(0)
+        arr = np.maximum(arr, 1e-10)
         log_arr = np.log10(arr)
-        # Bordes intermedios
         mid = (log_arr[:-1] + log_arr[1:]) / 2.0
-        # Extrapolar bordes iniciales y finales
-        first = log_arr[0] - (mid[0] - log_arr[0])
-        last  = log_arr[-1] + (log_arr[-1] - mid[-1])
-        edges_log = np.concatenate([[first], mid, [last]])
-        return 10**edges_log
+        return 10**np.concatenate([[log_arr[0] - (mid[0] - log_arr[0])], mid, [log_arr[-1] + (log_arr[-1] - mid[-1])]])
 
-    # Para el tiempo evitamos tomar log10(0) si time[0]==0
-    safe_t = np.maximum(t_array, 1.0) # Mejor 1.0 que 1e-6 para años, si t=0
+    # Prevenir log10(0)
+    safe_t = np.maximum(t_array, 1.0)
     t_edges = _log_edges(safe_t)
     r_edges = _log_edges(r_array)
 
@@ -105,15 +92,12 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
     ax.set_ylabel("Radio [AU]")
     ax.set_title(title, pad=10)
     
-    # 3. Dibujar Snowlines si están presentes
     if show_snowlines and disk.hdf5_snowlines:
         colors = ['cyan', 'white', 'lightgreen']
         for idx, (name, rsnow) in enumerate(disk.hdf5_snowlines.items()):
-            color = colors[idx % len(colors)]
             r_au = rsnow / c.AU
-            # Solo dibujar si cae dentro del rango y no es todo cero
             if np.any(r_au > 0):
-                ax.plot(safe_t, r_au, ls='--', color=color, lw=2, label=f"Snowline {name}")
+                ax.plot(safe_t, r_au, ls='--', color=colors[idx % len(colors)], lw=2, label=f"Snowline {name}")
         ax.legend(loc='lower left')
                 
     fig.tight_layout()
