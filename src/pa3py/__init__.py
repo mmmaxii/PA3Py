@@ -2,6 +2,8 @@
 PA3Py - Pebble Accretion 3 in Python
 """
 
+__version__ = "1.0.0"
+
 from .data import load_tripodpy_hdf5, DiskData
 from .composition import CompositionModel, SimpleWaterComposition, MultiSnowlineComposition, FunctionComposition
 from .pebble_accretion import PebbleAccretionModule3

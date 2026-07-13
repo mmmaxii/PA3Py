@@ -1,54 +1,74 @@
-# PA3Py (Pebble Accretion 3)
+# PA3Py — Pebble Accretion Post-Processing for TripodPy
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/mmmaxii/PA3Py/actions/workflows/tests.yml/badge.svg)](https://github.com/mmmaxii/PA3Py/actions)
 
-**PA3Py** is a modular Python package for post-processing protoplanetary disk hydrodynamic simulations (like those from `dustpy` or `tripodpy`) to compute the 2D and 3D pebble accretion growth of planetary embryos.
+**PA3Py** is a Python post-processing package for computing pebble accretion growth of planetary embryos from [TripodPy](https://github.com/stammler/tripodpy) hydrodynamic disk simulations. It is **not** a standalone disk evolution code — it reads TripodPy HDF5 output snapshots and computes embryo growth on top of them.
+
+The physics follows Ormel (2017) and Drążkowska et al. (2023), including headwind/shear regime switching, 2D–3D turbulence transition, Safronov ballistic onset, and a dynamic isolation mass cap.
+
+Please read the [documentation](https://pa3py.readthedocs.io) for a full description.
 
 ## Installation
 
+Clone the repository and install via pip:
+
 ```bash
-git clone https://github.com/tu-usuario/pa3py.git
-cd pa3py
-pip install -e .
+git clone https://github.com/mmmaxii/PA3Py.git
+cd PA3Py
+pip install .
+```
+
+For an editable installation (recommended during development):
+
+```bash
+pip install -e ".[dev]"
+```
+
+## Requirements
+
+- Python ≥ 3.9
+- [TripodPy](https://github.com/stammler/tripodpy) simulation output (HDF5 snapshots)
+- `numpy`, `scipy`, `h5py`, `matplotlib`
+
+## Quick Start
+
+```python
+from pa3py import PA3Py
+
+sim = PA3Py("path/to/tripodpy/output/")
+
+# Run pebble accretion for embryos at 2, 5, 10, 20 AU
+results = sim.run_growth([2.0, 5.0, 10.0, 20.0])
+
+# Hovmöller diagram (dust-to-gas ratio vs time)
+sim.plot_hovmoller(field='epsilon')
+```
+
+For custom chemistry (multi-snowline, 4-species):
+
+```python
+from pa3py import PA3Py, FunctionComposition
+from pa3py import constants as c
+
+def my_chemistry(r_cm, t_sec):
+    if r_cm < 3.0 * c.AU:
+        return {'silicates': 1.0}
+    elif r_cm < 5.0 * c.AU:
+        return {'silicates': 0.5, 'H2O': 0.5}
+    else:
+        return {'silicates': 0.3, 'H2O': 0.3, 'CO2': 0.4}
+
+sim = PA3Py("path/to/output/", comp_model=FunctionComposition(my_chemistry))
+results = sim.run_growth([5.0, 10.0, 20.0])
 ```
 
 ## Physics & References
 
-Este módulo integra estricta y directamente las formulaciones físicas obtenidas en:
-- **Ormel (2017)**: *The Emerging Paradigm of Pebble Accretion*.
-- **Drążkowska et al. (2023)**: *Planet Formation Theory in the Era of ALMA and Kepler: from Pebbles to Exoplanets*.
+- **Ormel (2017)**: *The Emerging Paradigm of Pebble Accretion*
+- **Drążkowska et al. (2023)**: *Planet Formation Theory in the Era of ALMA and Kepler*
 
-### 1. Masa Crítica para iniciar la Acreción de Pebbles (*Onset Mass*)
-Aparece una exclusión física para los cuerpos muy livianos. Para poder capturar el gas necesario de arrastre, un cuerpo debe tener una masa mínima. Implementamos:
-$$ M_{\rm PA\ onset} = {\rm St} \eta^3 M_{\star} $$
+## Acknowledgements
 
-*Implementación:* Si $M_{\rm pl} < M_{\rm PA\ onset}$, el modelo no asume tasa nula, sino que cruza al modo de **Acreción de Planetesimales (Safronov)** (Ec. 7.14 de Ormel 2017), asumiendo régimen gas-free balístico bajo densidad propia rocosa. Esto produce que haya una transición real entre el crecimiento primigenio de embriones pequeños al runaway estrepitoso provisto por pebbles.
-
-### 2. Ecuaciones Dinámicas de Acreción
-Se dividen orgánicamente los regímenes del acercamiento orbital según las propiedades fluidas analizadas por **Ormel (2017)**. 
-- **Headwind (Bondi-like drift limit)** ($M \lesssim M_{\rm hw/sh}$):
-  $$ \dot{M}_{\rm 2D, hw} = \sqrt{8 G M_{\rm pl} t_{\rm stop} v_{\rm hw}} \Sigma_{\rm peb} $$
-- **Shear (Hill limit)** ($M \gtrsim M_{\rm hw/sh}$):
-  $$ \dot{M}_{\rm 2D, sh} = 2 R_{\rm Hill}^2 \Omega_{\rm K} {\rm St}^{2/3} \Sigma_{\rm peb} $$
-  
-Con la masa de transición evaludaba matemáticamente con:
-$$ M_{\rm hw/sh} = \frac{v_{\rm hw}^3}{8 G \Omega_{\rm K} t_{\rm stop}} $$
-
-### 3. Transición Analítica a disco Extenso 3D
-Ya no se evalúa `erf` numéricamente para forzar transiciones. Se utiliza la aproximación turbulenta del factor de decaimiento natural propuesta por **Dubrulle (1995) / Ormel 2017 (Eq 7.24)**:
-$$ \dot{M} = \dot{M}_{\rm 2D} \left( \frac{b_{\rm col}}{b_{\rm col} + h_{\rm peb} \sqrt{8/\pi}} \right) $$
-Donde $h_{\rm peb} = \sqrt{\frac{\alpha_T}{\alpha_T + {\rm St}}} h_{\rm gas}$. Esta transición converge al límite 3D natural en discos muy agitados verticalmente.
-
-### 4. Masa Reguladora de Aislamiento
-Las barreras numéricas y el *overshoot* quedan protegidos por el rediseño más actualizado sobre retroalimentación entre aislamiento del gap y gas proporcionado por Bitsch, modificado bajo la última simplificación analítica de la comparación de **Drążkowska et al. 2023**:
-$$ M_{\rm iso, peb} = 25 M_{\oplus} \left(\frac{H/r}{0.05}\right)^3 \left(\frac{M_{\star}}{M_{\odot}}\right) $$
-
-### 5. Consumo y Drift
-Los Pebbles viajan hacia la estrella limitados por:
-$$ v_{\rm r,solid} \approx \frac{- 2\eta v_{\rm K} {\rm St}}{1 + {\rm St}^2} $$
-Para mantener el módulo de acreción puramente parasitario y conservador, se extrae la traza dinámica de los archivos HDF5 asumiendo compatibilidad directa.
-
-### 6. Composición Planetaria (Tracking Físico)
-Los embriones se inicializan asumiendo una semilla `100%` rocosa (silicatos). El tracking de composición evalúa la posición del embrión respecto a la *snowline* dinámica (`r_snow`) de agua extraída de la simulación hidrodinámica base.
-- Si $r \ge r_{\rm snow}$: El material acretado asume composición de hielo (50% H2O, 50% Silicatos).
-- Si $r < r_{\rm snow}$: El material acretado asume composición de polvo seco (100% Silicatos).
+PA3Py was developed at the Pontificia Universidad Católica de Chile. 
+Contact: [mvalderrav@uc.cl](mailto:mvalderrav@uc.cl)

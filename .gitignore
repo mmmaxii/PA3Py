@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Build / dist
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scratch (local dev scripts, not part of the package)
+scratch/
+
+# Large data files (test data is committed but raw simulation outputs are not)
+*.hdf5
+!tests/test_data/**/*.hdf5

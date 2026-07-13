@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pa3py"
-version = "0.1.0"
+version = "1.0.0"
 authors = [
-  { name="Maximiliano", email="tu.email@example.com" },
+  { name="Maximiliano Valderrama", email="mvalderrav@uc.cl" },
 ]
-description = "A modular post-processing tool for 2D and 3D pebble accretion onto planetary embryos, based on Ormel (2017) and Drążkowska et al. (2023)."
+description = "Post-processing tool for pebble accretion onto planetary embryos from TripodPy hydrodynamic simulations."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "MIT License" }
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -21,9 +21,18 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=1.20",
-    "h5py>=3.0"
+    "scipy>=1.7",
+    "h5py>=3.0",
+    "matplotlib>=3.4",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "jupyter>=1.0"]
+
 [project.urls]
-"Homepage" = "https://github.com/mmmaxii/pa3py"
-"Bug Tracker" = "https://github.com/mmmaxii/pa3py/issues"
+"Homepage"   = "https://github.com/mmmaxii/PA3Py"
+"Bug Tracker" = "https://github.com/mmmaxii/PA3Py/issues"
+"Documentation" = "https://pa3py.readthedocs.io"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
