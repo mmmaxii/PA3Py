@@ -114,3 +114,62 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
                 
     fig.tight_layout()
     return fig, ax
+
+def plot_hovmoller_epsilon(t_yr, r_au, Sigma_dust_2D, Sigma_gas_2D, fig_path="hovmoller_eps.png"):
+    """
+    t_yr: arreglo 1D con los tiempos en años (ej. de shape (Nt,))
+    r_au: arreglo 1D con los radios en AU (ej. de shape (Nr,))
+    Sigma_dust_2D: matriz de polvo de shape (Nt, Nr)
+    Sigma_gas_2D: matriz de gas de shape (Nt, Nr)
+    """
+    
+    # 1. Calcular Epsilon (polvo/gas). 
+    # Le sumamos 1e-300 al gas para evitar división por cero.
+    epsilon = Sigma_dust_2D / (Sigma_gas_2D + 1e-300)
+    epsilon = np.clip(epsilon, 1e-10, None)  # Limitar valores muy pequeños
+    
+    # 2. Función auxiliar para calcular los BORDES de las celdas logarítmicas
+    def _log_edges(arr):
+        arr = np.maximum(arr, 1e-10) # Evitar log(0)
+        log_arr = np.log10(arr)
+        # Bordes intermedios
+        mid = (log_arr[:-1] + log_arr[1:]) / 2.0
+        # Extrapolar bordes iniciales y finales
+        first = log_arr[0] - (mid[0] - log_arr[0])
+        last  = log_arr[-1] + (log_arr[-1] - mid[-1])
+        edges_log = np.concatenate([[first], mid, [last]])
+        return 10**edges_log
+
+    # Bordes de Tiempo (Eje X) y Radio (Eje Y)
+    # Reemplazamos 0 por 1.0 al inicio si es necesario para el log
+    t_yr_safe = np.maximum(t_yr, 1.0) 
+    t_edges = _log_edges(t_yr_safe)
+    r_edges = _log_edges(r_au)
+    
+    # 3. Graficar
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # IMPORTANTE: epsilon.T invierte de (Nt, Nr) a (Nr, Nt) para que cuadre
+    # con (X=tiempo, Y=radio).
+    pcm = ax.pcolormesh(
+        t_edges, r_edges, epsilon.T,
+        norm=LogNorm(vmin=1e-4, vmax=1e-1), # Ajusta los límites de color a tu gusto
+        cmap='magma', shading='flat'
+    )
+    
+    cbar = fig.colorbar(pcm, ax=ax, pad=0.02)
+    cbar.set_label(r"Relación polvo/gas ($\epsilon = \Sigma_d / \Sigma_g$)")
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlim(t_yr_safe[0], t_yr_safe[-1])
+    ax.set_ylim(r_au[0], r_au[-1])
+    
+    ax.set_xlabel("Tiempo [años]")
+    ax.set_ylabel("Distancia Radial [AU]")
+    ax.set_title(r"Diagrama Hovmöller: $\epsilon$")
+    
+    plt.tight_layout()
+    fig.savefig(fig_path, dpi=300, bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
