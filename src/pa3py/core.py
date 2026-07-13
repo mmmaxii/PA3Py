@@ -78,7 +78,7 @@ class PA3Py:
     def plot_hovmoller(self, field: str = 'dust_Sigma', show_snowlines: bool = True, **kwargs):
         """
         Genera el diagrama de Hovmöller (Radio vs Tiempo).
-        field puede ser 'dust_Sigma', 'gas_Sigma', o 'eps'.
+        field puede ser 'dust_Sigma', 'gas_Sigma', o 'epsilon'.
         """
         return plot_hovmoller(self.disk, field=field, show_snowlines=show_snowlines, **kwargs)
         
