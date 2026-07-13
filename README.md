@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://github.com/mmmaxii/PA3Py/actions/workflows/tests.yml/badge.svg)](https://github.com/mmmaxii/PA3Py/actions)
 
-**PA3Py** is a Python post-processing package for computing pebble accretion growth of planetary embryos from [TripodPy](https://github.com/stammler/tripodpy) hydrodynamic disk simulations. It is **not** a standalone disk evolution code — it reads TripodPy HDF5 output snapshots and computes embryo growth on top of them.
+**PA3Py** is a Python post-processing package for computing pebble accretion growth of planetary embryos from [TripodPy](https://github.com/tripod-code/tripodpy) hydrodynamic disk simulations. It is **not** a standalone disk evolution code — it reads TripodPy HDF5 output snapshots and computes embryo growth on top of them.
 
 The physics follows Ormel (2017) and Drążkowska et al. (2023), including headwind/shear regime switching, 2D–3D turbulence transition, Safronov ballistic onset, and a dynamic isolation mass cap.
 
@@ -28,7 +28,7 @@ pip install -e ".[dev]"
 ## Requirements
 
 - Python ≥ 3.9
-- [TripodPy](https://github.com/stammler/tripodpy) simulation output (HDF5 snapshots)
+- [TripodPy](https://github.com/tripod-code/tripodpy) simulation output (HDF5 snapshots)
 - `numpy`, `scipy`, `h5py`, `matplotlib`
 
 ## Quick Start

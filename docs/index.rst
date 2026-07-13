@@ -9,10 +9,10 @@ The physics follows Ormel (2017) and Drążkowska et al. (2023), including headw
    :maxdepth: 2
    :caption: Contents:
    
-   notebooks/00_Fisica_Implementada
-   notebooks/01_Primeros_Pasos
-   notebooks/02_Quimica_Avanzada
-   notebooks/03_Poblaciones_Sinteticas_e_IO
+   notebooks/00_Implemented_Physics
+   notebooks/01_Getting_Started
+   notebooks/02_Advanced_Chemistry
+   notebooks/03_Synthetic_Populations_and_IO
    api
 
 Installation
