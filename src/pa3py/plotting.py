@@ -26,15 +26,15 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
         # Le sumamos 1e-300 al gas para evitar división por cero.
         Z = dust / (gas + 1e-300)
         Z = np.clip(Z, 1e-10, None)  # Limitar valores muy pequeños
-        title = r"Hovmöller: Relación polvo/gas ($\epsilon = \Sigma_d / \Sigma_g$)"
+        title = r"Hovmöller: Dust-to-gas ratio ($\epsilon = \Sigma_d / \Sigma_g$)"
     else:
-        raise ValueError("Field no soportado. Opciones: 'dust_Sigma', 'gas_Sigma', 'epsilon'.")
+        raise ValueError("Unsupported field. Options: 'dust_Sigma', 'gas_Sigma', 'epsilon'.")
 
     # Limpiar ceros para escala log
     Z = np.clip(Z, 1e-20, None)
     
-    t_map = {'Myr': (c.YEAR * 1e6, "Tiempo [Myr]"), 'kyr': (c.YEAR * 1e3, "Tiempo [kyr]")}
-    t_factor, t_label = t_map.get(t_unit, (c.YEAR, "Tiempo [años]"))
+    t_map = {'Myr': (c.YEAR * 1e6, "Time [Myr]"), 'kyr': (c.YEAR * 1e3, "Time [kyr]")}
+    t_factor, t_label = t_map.get(t_unit, (c.YEAR, "Time [Years]"))
         
     t_array = disk.times / t_factor
     r_array = disk.r / c.AU
@@ -47,7 +47,7 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
         return 10**np.concatenate([[log_arr[0] - (mid[0] - log_arr[0])], mid, [log_arr[-1] + (log_arr[-1] - mid[-1])]])
 
     # Prevenir log10(0)
-    safe_t = np.maximum(t_array, 1.0)
+    safe_t = np.maximum(t_array, 1e-6)
     t_edges = _log_edges(safe_t)
     r_edges = _log_edges(r_array)
 
@@ -65,14 +65,14 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
                         cmap=cmap, shading='flat')
     
     cbar = fig.colorbar(pcm, ax=ax, pad=0.02)
-    cbar.set_label("Escala Logarítmica")
+    cbar.set_label("Logarithmic Scale")
     
     ax.set_xscale('log')
     ax.set_yscale('log')
     ax.set_xlim(safe_t[0], safe_t[-1])
     ax.set_ylim(r_array[0], r_array[-1])
     ax.set_xlabel(t_label)
-    ax.set_ylabel("Radio [AU]")
+    ax.set_ylabel("Radius [AU]")
     ax.set_title(title, pad=10)
     
     if show_snowlines and disk.hdf5_snowlines:
