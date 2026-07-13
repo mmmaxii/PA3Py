@@ -240,9 +240,9 @@ class PebbleAccretionModule3:
 
     def summary(self, results: dict):
         """Imprime tabla resumen de composición final con M_iso."""
-        SEP = '-' * 80
+        SEP = '-' * 70
         print(f"\n{SEP}")
-        print(f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11} {'f_H2O [%]':>10} {'f_Sil [%]':>10}  Tipo")
+        print(f"{'r [AU]':>8} {'M_tot [ME]':>11} {'M_iso [ME]':>11} {'f_H2O [%]':>10} {'f_Sil [%]':>10}")
         print(SEP)
         
         for r_au, hist in results.items():
@@ -260,8 +260,7 @@ class PebbleAccretionModule3:
                 f_h2o = 100 * M_H2O / M_total
                 f_sil = 100 * M_sil / M_total
             
-            tipo = "[W] Waterworld" if f_h2o > 10 else "[R] Rocoso"
-            print(f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}  {f_h2o:>9.1f}  {f_sil:>9.1f}  {tipo}")
+            print(f"{r_au:>8.2f}  {M/self.M_EARTH:>11.3f}  {M_iso/self.M_EARTH:>11.2f}  {f_h2o:>9.1f}  {f_sil:>9.1f}")
         print(f"{SEP}\n")
 
     def calculate_isolation_mass_map(self) -> np.ndarray:
