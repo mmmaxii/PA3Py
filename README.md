@@ -10,7 +10,15 @@ Please read the [documentation](https://pa3py.readthedocs.io) for a full descrip
 
 ## Installation
 
-Clone the repository and install via pip:
+### Option 1: Install from PyPI (Recommended)
+You can easily install the latest stable version of PA3Py using pip:
+
+```bash
+pip install pa3py
+```
+
+### Option 2: Install from Source
+If you want to modify the source code or get the latest development version, you can clone the repository:
 
 ```bash
 git clone https://github.com/mmmaxii/PA3Py.git
