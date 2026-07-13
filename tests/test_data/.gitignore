@@ -1,0 +1,3 @@
+# Ignorar los datos binarios pesados HDF5 pero no ignorar esta carpeta
+*
+!.gitignore
