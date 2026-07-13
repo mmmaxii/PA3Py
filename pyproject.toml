@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pa3py"
+version = "0.1.0"
+authors = [
+  { name="Maximiliano", email="tu.email@example.com" },
+]
+description = "A modular post-processing tool for 2D and 3D pebble accretion onto planetary embryos, based on Ormel (2017) and Drążkowska et al. (2023)."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT License" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = [
+    "numpy>=1.20",
+    "h5py>=3.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/tu-usuario/pa3py"
+"Bug Tracker" = "https://github.com/tu-usuario/pa3py/issues"
