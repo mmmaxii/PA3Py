@@ -87,3 +87,78 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
     return fig, ax
 
 
+
+def plot_population(disk, results: dict, M_iso_map: np.ndarray = None, **kwargs):
+    """
+    Grafica la población sintética de planetas (Masa Final vs Posición Inicial).
+    
+    Parámetros:
+    -----------
+    disk : DiskData
+        El objeto que contiene los datos del disco.
+    results : dict
+        Diccionario con los historiales de crecimiento de cada embrión.
+    M_iso_map : np.ndarray, opcional
+        Mapa 2D de masa de aislamiento calculada para todo el disco.
+    """
+    radii = []
+    final_masses = []
+    water_fractions = []
+
+    for r_au, hist in results.items():
+        if len(hist) == 0:
+            continue
+        
+        radii.append(float(r_au))
+        final_state = hist[-1]
+        total_m = final_state[1] / c.M_EARTH
+        
+        silicate_m = final_state[3]
+        water_m = final_state[4] if len(final_state) > 4 else 0.0
+        M_total = silicate_m + water_m
+        f_water = water_m / M_total if M_total > 0 else 0.0
+        
+        final_masses.append(total_m)
+        water_fractions.append(f_water * 100)
+        
+    radii = np.array(radii)
+    final_masses = np.array(final_masses)
+    water_fractions = np.array(water_fractions)
+    
+    fig, ax = plt.subplots(figsize=(10, 6))
+    
+    # 1. Snowline region
+    if disk.hdf5_snowlines and 'H2O' in disk.hdf5_snowlines:
+        rsnow_array = disk.hdf5_snowlines['H2O'] / c.AU
+        rsnow_valid = rsnow_array[rsnow_array > 0]
+        if len(rsnow_valid) > 0:
+            rsnow_min = np.min(rsnow_valid)
+            rsnow_max = np.max(rsnow_array)
+            ax.axvspan(rsnow_min, rsnow_max, color='cyan', alpha=0.1, label='Snowline Migration')
+            ax.axvline(rsnow_min, color='cyan', linestyle='--', alpha=0.5)
+            ax.axvline(rsnow_max, color='cyan', linestyle='--', alpha=0.5)
+            
+    # 2. Isolation Mass from the full disk grid
+    if M_iso_map is not None:
+        # Usamos el límite en el último paso de tiempo (estado final del disco)
+        iso_mass_final = M_iso_map[-1, :] / c.M_EARTH
+        r_grid_au = disk.r / c.AU
+        ax.plot(r_grid_au, iso_mass_final, color='gray', linestyle='--', alpha=0.7, zorder=1, label='Isolation Mass Limit')
+
+    # 3. Planetas
+    sc = ax.scatter(radii, final_masses, c=water_fractions, cmap='Blues', edgecolor='black', 
+                    s=80, alpha=0.9, zorder=2, vmin=0, vmax=50)
+                    
+    cbar = fig.colorbar(sc, ax=ax)
+    cbar.set_label('Water Mass Fraction [%]', rotation=270, labelpad=15)
+    
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    ax.set_xlabel('Initial Radius [AU]')
+    ax.set_ylabel('Final Mass [$M_\\oplus$]')
+    ax.set_title('Synthetic Population: Final Mass vs Initial Position')
+    ax.grid(True, which='both', linestyle=':', alpha=0.6)
+    ax.legend(loc='upper right')
+    
+    fig.tight_layout()
+    return fig, ax

@@ -73,6 +73,14 @@ class PA3Py:
         """Calcula el mapa teórico de masa de aislamiento en todo el disco."""
         return self.engine.calculate_isolation_mass_map()
 
+    def plot_population(self, results: dict, **kwargs):
+        """
+        Grafica la población sintética de planetas (Masa Final vs Posición Inicial).
+        """
+        from .plotting import plot_population
+        M_iso_map = self.calculate_isolation_mass_map()
+        return plot_population(self.disk, results, M_iso_map=M_iso_map, **kwargs)
+
     def save_results(self, results: dict, filename: str):
         """Guarda tracks de crecimiento en HDF5."""
         with h5py.File(filename, 'w') as f:
