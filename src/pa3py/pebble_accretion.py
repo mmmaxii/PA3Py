@@ -185,7 +185,6 @@ class PebbleAccretionModule3:
         for r in locs_outer_to_inner:
             M_X[r][primary_rock] = float(M0_g)
             
-        active   = {r: True for r in locs_outer_to_inner}
         histories= {r: [] for r in locs_outer_to_inner}
 
         for i in range(self.data.Nt):
@@ -195,30 +194,27 @@ class PebbleAccretionModule3:
             flux_consumed = 0.0
 
             for r_au in locs_outer_to_inner:
-                if not active[r_au]: continue
                 r_emb = r_au * self.AU
 
                 M_iso = self._isolation_mass(r_emb, i)
-                if M_core[r_au] >= M_iso:
-                    active[r_au] = False
-                    continue
+                
+                if M_core[r_au] < M_iso:
+                    Mdot_peb_disk  = self._pebble_flux(i, r_emb)
+                    Mdot_peb_avail = max(0.0, Mdot_peb_disk - flux_consumed)
 
-                Mdot_peb_disk  = self._pebble_flux(i, r_emb)
-                Mdot_peb_avail = max(0.0, Mdot_peb_disk - flux_consumed)
+                    Mdot_core_r = self._accretion_rate(M_core[r_au], r_emb, i)
+                    Mdot_core_r = min(Mdot_core_r, Mdot_peb_avail)
 
-                Mdot_core_r = self._accretion_rate(M_core[r_au], r_emb, i)
-                Mdot_core_r = min(Mdot_core_r, Mdot_peb_avail)
+                    dM = Mdot_core_r * dt
+                    dM = min(dM, max(0.0, M_iso - M_core[r_au]))
+                    flux_consumed += Mdot_core_r
 
-                dM = Mdot_core_r * dt
-                dM = min(dM, max(0.0, M_iso - M_core[r_au]))
-                flux_consumed += Mdot_core_r
+                    # Calcular partición de masa acretada usando el modelo de composición
+                    fractions = self.comp.get_fractions(r_emb, self.data.times[i], i)
+                    for sp in self.tracked_species:
+                        M_X[r_au][sp] += fractions.get(sp, 0.0) * dM
 
-                # Calcular partición de masa acretada usando el modelo de composición
-                fractions = self.comp.get_fractions(r_emb, self.data.times[i], i)
-                for sp in self.tracked_species:
-                    M_X[r_au][sp] += fractions.get(sp, 0.0) * dM
-
-                M_core[r_au] += dM
+                    M_core[r_au] += dM
 
                 # Guardamos: t, M_core, M_iso, y luego las masas de cada especie
                 hist_row = [
