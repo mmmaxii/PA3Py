@@ -7,6 +7,7 @@ from .composition import CompositionModel, SimpleWaterComposition, MultiSnowline
 from .pebble_accretion import PebbleAccretionModule3
 from .snowline import generate_rsnow_array, get_rsnow_from_mdot_au, mdot_time, r_snow_time_cgs
 from .plotting import plot_hovmoller
+from .core import PA3Py
 
 def easy_run(data_dir: str, embryos_au: list, m_seed_me: float = 1e-4) -> dict:
     """
@@ -55,5 +56,6 @@ __all__ = [
     "PebbleAccretionModule3",
     "generate_rsnow_array",
     "easy_run",
-    "plot_hovmoller"
+    "plot_hovmoller",
+    "PA3Py"
 ]
