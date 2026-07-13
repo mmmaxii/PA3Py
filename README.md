@@ -1,7 +1,6 @@
 # PA3Py — Pebble Accretion Post-Processing for TripodPy
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://github.com/mmmaxii/PA3Py/actions/workflows/tests.yml/badge.svg)](https://github.com/mmmaxii/PA3Py/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Tests](https://github.com/mmmaxii/PA3Py/actions/workflows/tests.yml/badge.svg)](https://github.com/mmmaxii/PA3Py/actions) [![Documentation Status](https://readthedocs.org/projects/pa3py/badge/?version=latest)](https://pa3py.readthedocs.io/en/latest/?badge=latest)
 
 **PA3Py** is a Python post-processing package for computing pebble accretion growth of planetary embryos from [TripodPy](https://github.com/tripod-code/tripodpy) hydrodynamic disk simulations. It is **not** a standalone disk evolution code — it reads TripodPy HDF5 output snapshots and computes embryo growth on top of them.
 
