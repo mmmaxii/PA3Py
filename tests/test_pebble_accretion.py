@@ -162,6 +162,70 @@ def test_multizone_autodetection():
         
     print("[OK] Auto-detección de 4 zonas exitosa. Especies encontradas:", sim.tracked_species)
 
+
+def test_history_full_length():
+    """Todos los embriones retornan exactamente Nt filas, incluso post M_iso."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+
+    disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
+    sim  = PebbleAccretionModule3(disk, comp_model=SimpleWaterComposition(generate_rsnow_array(disk.times)))
+    results = sim.run_growth([3.0, 10.0], M0_g=1e-3 * c.M_EARTH)
+
+    for r_au, hist in results.items():
+        assert hist.shape[0] == disk.Nt, \
+            f"Embrión {r_au} AU: {hist.shape[0]} filas, esperaba {disk.Nt}"
+
+
+def test_isolation_mass_saturation():
+    """M_core nunca supera M_iso en ningún timestep."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+
+    disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
+    sim  = PebbleAccretionModule3(disk, comp_model=SimpleWaterComposition(generate_rsnow_array(disk.times)))
+    results = sim.run_growth([3.0, 5.0, 10.0], M0_g=1e-3 * c.M_EARTH)
+
+    for r_au, hist in results.items():
+        M_core = hist[:, 1]
+        M_iso  = hist[:, 2]
+        overshoot = (M_core - M_iso).max()
+        assert overshoot <= 1e-20, \
+            f"Embrión {r_au} AU: M_core supera M_iso en {overshoot:.2e} g"
+
+
+def test_isolation_mass_map_shape():
+    """calculate_isolation_mass_map retorna shape (Nt, Nr) con todos los valores positivos."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+
+    disk     = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
+    sim      = PebbleAccretionModule3(disk)
+    M_iso_map = sim.calculate_isolation_mass_map()
+
+    assert M_iso_map.shape == (disk.Nt, disk.Nr), \
+        f"Shape incorrecto: {M_iso_map.shape} != ({disk.Nt}, {disk.Nr})"
+    assert np.all(M_iso_map > 0), "M_iso_map contiene valores no positivos"
+
+
+def test_hovmoller_smoke():
+    """plot_hovmoller corre sin errores en los tres modos de campo."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    from pa3py import PA3Py
+
+    sim = PA3Py(DATA_DIR_SMOOTH)
+    for field in ['dust_Sigma', 'gas_Sigma', 'epsilon']:
+        fig, ax = sim.plot_hovmoller(field=field, show_snowlines=False)
+        assert fig is not None
+        assert ax  is not None
+        plt.close(fig)
+
+
 if __name__ == "__main__":
     test_smooth_run()
     test_sinusoidal_run()
@@ -169,3 +233,7 @@ if __name__ == "__main__":
     test_out_of_bounds_embryo()
     test_multispecies_dynamic()
     test_multizone_autodetection()
+    test_history_full_length()
+    test_isolation_mass_saturation()
+    test_isolation_mass_map_shape()
+    test_hovmoller_smoke()
