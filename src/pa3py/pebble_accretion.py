@@ -206,7 +206,7 @@ class PebbleAccretionModule3:
                 flux_consumed += Mdot_core_r
 
                 # Calcular partición de masa acretada usando el modelo de composición
-                fractions = self.comp.get_fractions(r_emb, i)
+                fractions = self.comp.get_fractions(r_emb, self.data.times[i], i)
                 for sp in species:
                     M_X[r_au][sp] += fractions.get(sp, 0.0) * dM
 

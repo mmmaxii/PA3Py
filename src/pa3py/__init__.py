@@ -3,7 +3,7 @@ PA3Py - Pebble Accretion 3 in Python
 """
 
 from .data import load_tripodpy_hdf5, DiskData
-from .composition import CompositionModel, SimpleWaterComposition, MultiSnowlineComposition
+from .composition import CompositionModel, SimpleWaterComposition, MultiSnowlineComposition, FunctionComposition
 from .pebble_accretion import PebbleAccretionModule3
 from .snowline import generate_rsnow_array, get_rsnow_from_mdot_au, mdot_time, r_snow_time_cgs
 
@@ -50,6 +50,7 @@ __all__ = [
     "CompositionModel",
     "SimpleWaterComposition",
     "MultiSnowlineComposition",
+    "FunctionComposition",
     "PebbleAccretionModule3",
     "generate_rsnow_array",
     "easy_run"
