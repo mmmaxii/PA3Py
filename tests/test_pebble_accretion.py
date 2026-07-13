@@ -82,7 +82,27 @@ def test_strong_gap_run():
     results = sim.run_growth(embryos, M0_g=1e-3 * sim.M_EARTH)
     sim.summary(results)
 
+def test_out_of_bounds_embryo():
+    """Prueba que el paquete lance ValueError si un embrión está fuera de la grilla."""
+    if not os.path.exists(DATA_DIR_SMOOTH):
+        return
+        
+    print("\n" + "="*80)
+    print("TEST: OUT OF BOUNDS EMBRYO")
+    print("="*80)
+    
+    disk = load_tripodpy_hdf5(DATA_DIR_SMOOTH)
+    comp = SimpleWaterComposition(generate_rsnow_array(disk.times))
+    sim = PebbleAccretionModule3(disk, comp_model=comp)
+    
+    try:
+        sim.run_growth(embryo_locations_AU=[200.0])
+        print("ERROR: test_out_of_bounds_embryo failed to raise ValueError!")
+    except ValueError as e:
+        print("[OK] Boundary check passed successfully:", e)
+
 if __name__ == "__main__":
     test_smooth_run()
     test_sinusoidal_run()
     test_strong_gap_run()
+    test_out_of_bounds_embryo()

@@ -163,6 +163,15 @@ class PebbleAccretionModule3:
     # ══════════════════════════════════════════════════════════════════════
 
     def run_growth(self, embryo_locations_AU: list, M0_g: float = None) -> dict:
+        # Validar límites de la grilla
+        r_min_cgs = self.data.r[0]
+        r_max_cgs = self.data.r[-1]
+        for r_au in embryo_locations_AU:
+            r_cgs = r_au * self.AU
+            if r_cgs < r_min_cgs or r_cgs > r_max_cgs:
+                raise ValueError(f"El embrión en {r_au} AU está fuera de los límites del disco "
+                                 f"({(r_min_cgs/self.AU):.2f} AU - {(r_max_cgs/self.AU):.2f} AU).")
+
         if M0_g is None:
             M0_g = 1e-3 * self.M_EARTH
             
@@ -220,6 +229,8 @@ class PebbleAccretionModule3:
                     M_X[r_au].get('silicates', 0.0), 
                     M_iso
                 ))
+
+
 
         results = {
             r_au: (np.array(histories[r_au]) if histories[r_au] else np.empty((0, 5)))
