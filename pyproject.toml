@@ -25,5 +25,5 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/tu-usuario/pa3py"
-"Bug Tracker" = "https://github.com/tu-usuario/pa3py/issues"
+"Homepage" = "https://github.com/mmmaxii/pa3py"
+"Bug Tracker" = "https://github.com/mmmaxii/pa3py/issues"
