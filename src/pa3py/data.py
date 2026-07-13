@@ -53,9 +53,9 @@ def load_tripodpy_hdf5(datadir: str, M_star: float = 1.0, t_min_yr: float = 0.0)
     
     files = sorted(glob.glob(os.path.join(datadir, 'data*.hdf5')))
     if not files:
-        raise FileNotFoundError(f"No se encontraron archivos HDF5 en {datadir}")
+        raise FileNotFoundError(f"No HDF5 files found in {datadir}")
 
-    print(f"[load_tripodpy_hdf5] Leyendo {len(files)} snapshots desde {datadir}...")
+    print(f"[load_tripodpy_hdf5] Reading {len(files)} snapshots from {datadir}...")
     
     times_list, OmegaK_list = [], []
     rsnow = {'H2O': []}

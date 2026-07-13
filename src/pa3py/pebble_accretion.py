@@ -206,7 +206,7 @@ class PebbleAccretionModule3:
         
         for r_au, hist in results.items():
             if len(hist) == 0:
-                print(f"{r_au:>8.2f}  -- sin acreción")
+                print(f"{r_au:>8.2f}  -- no accretion")
                 continue
             
             _, M, M_iso, *M_species = hist[-1]
