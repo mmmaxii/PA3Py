@@ -2,11 +2,47 @@
 plotting.py - Herramientas de visualización (ej: Diagrama Hovmöller)
 """
 
+from typing import Optional, Union, List
+
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+import matplotlib.cm as cm
+from matplotlib.colors import LogNorm, Normalize
+from matplotlib.lines import Line2D
 from .data import DiskData
 from . import constants as c
+
+_DISCRETE_LEGEND_MAX = 8
+_SPECIES_LINESTYLES = ['-', '--', '-.', ':']
+
+
+def _resolve_time_unit(t_unit: str) -> tuple:
+    """Devuelve (factor_de_conversion, etiqueta_eje) para un t_unit dado."""
+    t_map = {'Myr': (c.YEAR * 1e6, "Time [Myr]"), 'kyr': (c.YEAR * 1e3, "Time [kyr]")}
+    return t_map.get(t_unit, (c.YEAR, "Time [Years]"))
+
+
+def _radius_colors(radii_au, cmap: str = 'viridis'):
+    """
+    Decide cómo colorear N trayectorias identificadas por su radio inicial.
+
+    Retorna (colors, mode, extra) donde:
+      - mode == 'discrete': colors es una lista de colores (uno por radio, colormap
+        cualitativo 'tab10'); el caller debe añadir una leyenda por línea.
+      - mode == 'continuous': colors es una lista de colores tomados de `cmap`
+        normalizados sobre [min(radii), max(radii)]; extra es el ScalarMappable
+        que el caller debe usar para dibujar un colorbar.
+    """
+    radii_au = np.asarray(radii_au, dtype=float)
+    if len(radii_au) <= _DISCRETE_LEGEND_MAX:
+        tab10 = plt.get_cmap('tab10')
+        colors = [tab10(i % 10) for i in range(len(radii_au))]
+        return colors, 'discrete', None
+    else:
+        norm = Normalize(vmin=np.min(radii_au), vmax=np.max(radii_au))
+        sm = cm.ScalarMappable(norm=norm, cmap=plt.get_cmap(cmap))
+        colors = [sm.to_rgba(r) for r in radii_au]
+        return colors, 'continuous', sm
 
 def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma', 
                    cmap: str = 'magma', vmin: float = None, vmax: float = None,
@@ -33,9 +69,8 @@ def plot_hovmoller(disk: DiskData, field: str = 'dust_Sigma',
     # Limpiar ceros para escala log
     Z = np.clip(Z, 1e-20, None)
     
-    t_map = {'Myr': (c.YEAR * 1e6, "Time [Myr]"), 'kyr': (c.YEAR * 1e3, "Time [kyr]")}
-    t_factor, t_label = t_map.get(t_unit, (c.YEAR, "Time [Years]"))
-        
+    t_factor, t_label = _resolve_time_unit(t_unit)
+
     t_array = disk.times / t_factor
     r_array = disk.r / c.AU
 
@@ -159,6 +194,216 @@ def plot_population(disk, results: dict, M_iso_map: np.ndarray = None, **kwargs)
     ax.set_title('Synthetic Population: Final Mass vs Initial Position')
     ax.grid(True, which='both', linestyle=':', alpha=0.6)
     ax.legend(loc='upper right')
-    
+
     fig.tight_layout()
     return fig, ax
+
+
+def plot_growth_curves(results: dict, embryos: Optional[list] = None,
+                        time_unit: str = 'Myr', show_isolation_mass: bool = True,
+                        cmap: str = 'viridis', ax=None):
+    """
+    Grafica la masa acretada (M_core) vs tiempo para una o varias trayectorias
+    de embriones, con la masa de aislamiento (M_iso) opcionalmente superpuesta.
+
+    Parámetros:
+    -----------
+    results : dict
+        Diccionario {r_au: historial} como el que retorna PA3Py.run_growth /
+        PebbleAccretionModule3.run_growth. Columnas del historial:
+        [tiempo_s, M_core_g, M_iso_g, ...especies].
+    embryos : list, opcional
+        Subconjunto de radios iniciales (claves de `results`) a graficar.
+        Por defecto se grafican todas las trayectorias.
+    time_unit : str
+        'Myr', 'kyr', o cualquier otro valor para usar Años.
+    show_isolation_mass : bool
+        Si es True, superpone M_iso(t) como línea punteada del mismo color
+        que la trayectoria de M_core correspondiente. La masa de aislamiento
+        actúa como tope físico del crecimiento y define el límite superior
+        del eje Y.
+    cmap : str
+        Colormap continuo a usar cuando hay más de 8 trayectorias.
+    ax : matplotlib.axes.Axes, opcional
+        Ejes existentes donde dibujar (para componer figuras). Si es None,
+        se crea una figura nueva.
+
+    Retorna:
+    --------
+    (fig, ax)
+    """
+    keys = sorted(results.keys()) if embryos is None else list(embryos)
+    keys = [r_au for r_au in keys if len(results[r_au]) > 0]
+
+    t_factor, t_label = _resolve_time_unit(time_unit)
+    colors, mode, sm = _radius_colors(keys, cmap=cmap)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+    else:
+        fig = ax.figure
+
+    m_floor = np.inf
+    m_ceiling = 0.0
+    for r_au, color in zip(keys, colors):
+        hist = results[r_au]
+        t = hist[:, 0] / t_factor
+        m_core = hist[:, 1] / c.M_EARTH
+        label = f"{r_au:g} AU" if mode == 'discrete' else None
+        ax.plot(t, m_core, color=color, lw=2, label=label)
+        m_floor = min(m_floor, np.min(m_core[m_core > 0], initial=np.inf))
+        m_ceiling = max(m_ceiling, np.max(m_core))
+        if show_isolation_mass:
+            m_iso = hist[:, 2] / c.M_EARTH
+            ax.plot(t, m_iso, color=color, lw=1, ls='--', alpha=0.6)
+            m_ceiling = max(m_ceiling, np.max(m_iso))
+
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+    # La masa de aislamiento (o la masa máxima alcanzada) define el techo del eje
+    if np.isfinite(m_floor) and m_ceiling > 0:
+        ax.set_ylim(m_floor * 0.5, m_ceiling * 2.0)
+    ax.set_xlabel(t_label)
+    ax.set_ylabel(r"Mass [$M_\oplus$]")
+    ax.set_title("Embryo Growth")
+    ax.grid(True, which='both', linestyle=':', alpha=0.6)
+
+    if mode == 'discrete':
+        ax.legend(loc='best')
+    elif sm is not None:
+        fig.colorbar(sm, ax=ax, label='Initial Radius [AU]')
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_species_fraction(results: dict, tracked_species: list,
+                           species: Union[str, List[str], None] = 'H2O',
+                           embryos: Optional[list] = None, time_unit: str = 'Myr',
+                           cmap: str = 'viridis', ylim: Optional[tuple] = None, ax=None):
+    """
+    Grafica la fracción de masa (%) de una o varias especies rastreadas vs
+    tiempo, para una o varias trayectorias de embriones.
+
+    Parámetros:
+    -----------
+    results : dict
+        Diccionario {r_au: historial}, ver `plot_growth_curves`.
+    tracked_species : list
+        Nombres de las especies rastreadas, en el mismo orden que las columnas
+        3+ de cada historial (ej: PA3Py.engine.tracked_species).
+    species : str, list o None
+        Especie(s) a graficar. Por defecto 'H2O' (fracción de agua). Puede ser
+        una lista (ej: ['H2O', 'CO2']) o None para graficar todas las especies
+        rastreadas — útil con química multi-snowline (ver notebook 02).
+        Con varias especies, el color identifica al embrión y el estilo de
+        línea a la especie; con un solo embrión, el color identifica a la
+        especie directamente.
+    embryos, time_unit, cmap, ax : ver `plot_growth_curves`.
+    ylim : tuple, opcional
+        Límites del eje Y (%).
+
+    Retorna:
+    --------
+    (fig, ax)
+    """
+    if species is None:
+        species_list = list(tracked_species)
+    elif isinstance(species, str):
+        species_list = [species]
+    else:
+        species_list = list(species)
+
+    for sp in species_list:
+        if sp not in tracked_species:
+            raise ValueError(f"'{sp}' not in tracked_species={tracked_species}")
+
+    keys = sorted(results.keys()) if embryos is None else list(embryos)
+    keys = [r_au for r_au in keys if len(results[r_au]) > 0]
+
+    t_factor, t_label = _resolve_time_unit(time_unit)
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 5))
+    else:
+        fig = ax.figure
+
+    def _fraction(hist, sp):
+        col_idx = 3 + tracked_species.index(sp)
+        total = hist[:, 3:].sum(axis=1)
+        return 100 * np.divide(hist[:, col_idx], total, out=np.zeros_like(total), where=total > 0)
+
+    multi_species = len(species_list) > 1
+
+    if multi_species and len(keys) == 1:
+        # Un solo embrión, varias especies: el color identifica a la especie.
+        r_au = keys[0]
+        hist = results[r_au]
+        t = hist[:, 0] / t_factor
+        tab10 = plt.get_cmap('tab10')
+        for i, sp in enumerate(species_list):
+            ax.plot(t, _fraction(hist, sp), color=tab10(i % 10), lw=2, label=sp)
+        ax.legend(loc='best', title='Species')
+        title = f"Composition Evolution at {r_au:g} AU"
+    else:
+        # Color por embrión; si hay varias especies, estilo de línea por especie.
+        colors, mode, sm = _radius_colors(keys, cmap=cmap)
+        for r_au, color in zip(keys, colors):
+            hist = results[r_au]
+            t = hist[:, 0] / t_factor
+            for i, sp in enumerate(species_list):
+                ls = _SPECIES_LINESTYLES[i % len(_SPECIES_LINESTYLES)]
+                label = f"{r_au:g} AU" if (mode == 'discrete' and i == 0) else None
+                ax.plot(t, _fraction(hist, sp), color=color, lw=2, ls=ls, label=label)
+
+        if mode == 'discrete':
+            emb_legend = ax.legend(loc='upper left', title='Embryo')
+            if multi_species:
+                ax.add_artist(emb_legend)
+        elif sm is not None:
+            fig.colorbar(sm, ax=ax, label='Initial Radius [AU]')
+
+        if multi_species:
+            proxies = [Line2D([0], [0], color='gray', lw=2,
+                              ls=_SPECIES_LINESTYLES[i % len(_SPECIES_LINESTYLES)])
+                       for i in range(len(species_list))]
+            ax.legend(proxies, species_list, loc='upper right', title='Species')
+
+        title = (f"{species_list[0]} Fraction Evolution" if not multi_species
+                 else "Composition Evolution")
+
+    ax.set_xscale('log')
+    ax.set_xlabel(t_label)
+    ax.set_ylabel(f"{species_list[0]} Mass Fraction [%]" if not multi_species
+                  else "Species Mass Fraction [%]")
+    ax.set_title(title)
+    ax.grid(True, which='both', linestyle=':', alpha=0.6)
+    if ylim is not None:
+        ax.set_ylim(*ylim)
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_growth_summary(results: dict, tracked_species: list, species: str = 'H2O',
+                         embryos: Optional[list] = None, time_unit: str = 'Myr',
+                         show_isolation_mass: bool = True, cmap: str = 'viridis',
+                         figsize: tuple = (14, 5)):
+    """
+    Figura de 2 paneles: crecimiento de masa (izquierda) + fracción de una
+    especie (derecha), para una o varias trayectorias de embriones.
+
+    Ver `plot_growth_curves` y `plot_species_fraction` para el detalle de
+    los parámetros compartidos.
+
+    Retorna:
+    --------
+    (fig, (ax_mass, ax_frac))
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+    plot_growth_curves(results, embryos=embryos, time_unit=time_unit,
+                        show_isolation_mass=show_isolation_mass, cmap=cmap, ax=ax1)
+    plot_species_fraction(results, tracked_species, species=species, embryos=embryos,
+                           time_unit=time_unit, cmap=cmap, ax=ax2)
+    fig.tight_layout()
+    return fig, (ax1, ax2)

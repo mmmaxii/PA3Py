@@ -29,6 +29,19 @@ Data Handling
    :undoc-members:
    :show-inheritance:
 
+Plotting
+--------
+
+.. autofunction:: pa3py.plot_hovmoller
+
+.. autofunction:: pa3py.plotting.plot_population
+
+.. autofunction:: pa3py.plot_growth_curves
+
+.. autofunction:: pa3py.plot_species_fraction
+
+.. autofunction:: pa3py.plot_growth_summary
+
 Composition Models
 ------------------
 

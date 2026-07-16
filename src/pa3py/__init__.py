@@ -8,7 +8,7 @@ from .data import load_tripodpy_hdf5, DiskData
 from .composition import CompositionModel, SimpleWaterComposition, MultiSnowlineComposition, FunctionComposition
 from .pebble_accretion import PebbleAccretionModule3
 from .snowline import generate_rsnow_array, get_rsnow_from_mdot_au, mdot_time, r_snow_time_cgs
-from .plotting import plot_hovmoller
+from .plotting import plot_hovmoller, plot_growth_curves, plot_species_fraction, plot_growth_summary
 from .core import PA3Py
 from . import constants
 
@@ -60,6 +60,9 @@ __all__ = [
     "generate_rsnow_array",
     "easy_run",
     "plot_hovmoller",
+    "plot_growth_curves",
+    "plot_species_fraction",
+    "plot_growth_summary",
     "PA3Py",
     "constants"
 ]

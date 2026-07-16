@@ -81,6 +81,36 @@ class PA3Py:
         M_iso_map = self.calculate_isolation_mass_map()
         return plot_population(self.disk, results, M_iso_map=M_iso_map, **kwargs)
 
+    def plot_growth_curves(self, results: dict, **kwargs):
+        """
+        Grafica la masa acretada (M_core) vs tiempo para una o varias
+        trayectorias de embriones, con M_iso opcionalmente superpuesta.
+        """
+        from .plotting import plot_growth_curves
+        return plot_growth_curves(results, **kwargs)
+
+    def plot_species_fraction(self, results: dict, species='H2O', **kwargs):
+        """
+        Grafica la fracción de masa (%) de una o varias especies vs tiempo,
+        para una o varias trayectorias de embriones.
+
+        `species` puede ser un string (por defecto 'H2O'), una lista de
+        especies (ej: ['H2O', 'CO2']) o None para graficar todas las
+        especies rastreadas por el modelo de composición activo.
+        """
+        from .plotting import plot_species_fraction
+        return plot_species_fraction(results, tracked_species=self.engine.tracked_species,
+                                      species=species, **kwargs)
+
+    def plot_growth_summary(self, results: dict, species: str = 'H2O', **kwargs):
+        """
+        Figura de 2 paneles: crecimiento de masa + fracción de una especie,
+        para una o varias trayectorias de embriones.
+        """
+        from .plotting import plot_growth_summary
+        return plot_growth_summary(results, tracked_species=self.engine.tracked_species,
+                                    species=species, **kwargs)
+
     def save_results(self, results: dict, filename: str):
         """Guarda tracks de crecimiento en HDF5."""
         with h5py.File(filename, 'w') as f:
